@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { collection, query, orderBy, doc, updateDoc } from "firebase/firestore"
+import { collection, query, orderBy, doc, updateDoc, increment } from "firebase/firestore"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { 
@@ -14,7 +14,10 @@ import {
   ShieldX, 
   Hash, 
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Coins,
+  Plus,
+  Minus
 } from "lucide-react"
 import {
   Dialog,
@@ -40,6 +43,7 @@ export default function AdminPage() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [newSequentialId, setNewSequentialId] = useState("")
+  const [coinAdjustment, setCoinAdjustment] = useState("")
 
   // Fetch current user to verify admin status
   const userDocRef = useMemoFirebase(() => {
@@ -132,6 +136,34 @@ export default function AdminPage() {
       .finally(() => setIsUpdating(false))
   }
 
+  const handleAdjustCoins = async (targetUser: any, method: 'add' | 'remove') => {
+    if (!db || !coinAdjustment) return
+    const amount = parseInt(coinAdjustment)
+    if (isNaN(amount) || amount <= 0) return
+
+    setIsUpdating(true)
+    const targetRef = doc(db, "users", targetUser.id)
+    const adjustment = method === 'add' ? amount : -amount
+    const updateData = { coins: increment(adjustment) }
+
+    updateDoc(targetRef, updateData)
+      .then(() => {
+        toast({
+          title: "Coins Updated",
+          description: `${method === 'add' ? "Added" : "Removed"} ${amount} coins for ${targetUser.username}.`,
+        })
+        setCoinAdjustment("")
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: targetRef.path,
+          operation: "update",
+          requestResourceData: updateData,
+        }))
+      })
+      .finally(() => setIsUpdating(false))
+  }
+
   return (
     <main className="min-h-screen bg-background w-full pt-24 px-6 pb-20">
       <NavigationBar />
@@ -173,7 +205,7 @@ export default function AdminPage() {
                     {userItem.isAdmin && <ShieldCheck className="h-4 w-4 text-primary" />}
                   </span>
                   <span className="text-muted-foreground text-sm font-headline tracking-widest">
-                    ID: #{userItem.sequentialId}
+                    ID: #{userItem.sequentialId} | Coins: {userItem.coins ?? 0}
                   </span>
                 </div>
               </div>
@@ -182,6 +214,7 @@ export default function AdminPage() {
                 if (!open) {
                   setEditingUserId(null)
                   setNewSequentialId("")
+                  setCoinAdjustment("")
                 }
               }}>
                 <DialogTrigger asChild>
@@ -197,15 +230,15 @@ export default function AdminPage() {
                     <Settings2 className="h-5 w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-background border-border">
+                <DialogContent className="bg-background border-border max-w-md">
                   <DialogHeader>
                     <DialogTitle className="font-headline font-bold text-2xl">Manage User: {userItem.username}</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                      Update permissions and system placement.
+                      Update permissions, system placement, and currency balance.
                     </DialogDescription>
                   </DialogHeader>
 
-                  <div className="py-6 space-y-6">
+                  <div className="py-6 space-y-8">
                     {/* Admin Toggle */}
                     <div className="space-y-2">
                       <label className="text-xs font-headline font-bold text-muted-foreground tracking-widest uppercase">Admin Privileges</label>
@@ -232,23 +265,58 @@ export default function AdminPage() {
                     {/* Sequential ID Change */}
                     <div className="space-y-2">
                       <label className="text-xs font-headline font-bold text-muted-foreground tracking-widest uppercase">Sequential ID Position</label>
-                      <div className="relative">
-                        <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="number"
-                          placeholder="Position Number"
-                          value={newSequentialId}
-                          onChange={(e) => setNewSequentialId(e.target.value)}
-                          className="bg-background border-border pl-10 h-12"
-                        />
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="number"
+                            placeholder="Position Number"
+                            value={newSequentialId}
+                            onChange={(e) => setNewSequentialId(e.target.value)}
+                            className="bg-background border-border pl-10 h-12"
+                          />
+                        </div>
+                        <Button
+                          onClick={() => handleUpdateSequentialId(userItem)}
+                          disabled={isUpdating || !newSequentialId || newSequentialId === userItem.sequentialId.toString()}
+                          className="bg-primary text-primary-foreground hover:bg-primary/90 font-headline font-bold h-12 px-6"
+                        >
+                          Update
+                        </Button>
                       </div>
-                      <Button
-                        onClick={() => handleUpdateSequentialId(userItem)}
-                        disabled={isUpdating || !newSequentialId || newSequentialId === userItem.sequentialId.toString()}
-                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-headline font-bold h-12"
-                      >
-                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update ID Position"}
-                      </Button>
+                    </div>
+
+                    {/* Coin Management */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-headline font-bold text-muted-foreground tracking-widest uppercase">Coin Management</label>
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <Coins className="absolute left-3 top-3 h-4 w-4 text-yellow-500" />
+                          <Input
+                            type="number"
+                            placeholder="Amount to add/remove"
+                            value={coinAdjustment}
+                            onChange={(e) => setCoinAdjustment(e.target.value)}
+                            className="bg-background border-border pl-10 h-12"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Button
+                            onClick={() => handleAdjustCoins(userItem, 'add')}
+                            disabled={isUpdating || !coinAdjustment}
+                            className="h-12 bg-green-600 hover:bg-green-700 text-white font-headline font-bold gap-2"
+                          >
+                            <Plus className="h-4 w-4" /> Add
+                          </Button>
+                          <Button
+                            onClick={() => handleAdjustCoins(userItem, 'remove')}
+                            disabled={isUpdating || !coinAdjustment}
+                            className="h-12 bg-red-600 hover:bg-red-700 text-white font-headline font-bold gap-2"
+                          >
+                            <Minus className="h-4 w-4" /> Remove
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </DialogContent>
