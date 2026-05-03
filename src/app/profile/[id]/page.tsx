@@ -146,8 +146,8 @@ export default function ProfilePage() {
       await deleteDoc(doc(db, "friendships", friendship.id))
       toast({ title: "FRIEND REMOVED" })
     } else {
-      if (totalFriendsCount >= 10) {
-        toast({ variant: "destructive", title: "LIMIT REACHED", description: "YOU CAN ONLY HAVE 10 FRIENDS." })
+      if (totalFriendsCount >= 20) {
+        toast({ variant: "destructive", title: "LIMIT REACHED", description: "YOU CAN ONLY HAVE 20 FRIENDS." })
         return
       }
       await addDoc(collection(db, "friendships"), {

@@ -50,7 +50,7 @@ export function FriendCircles() {
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || friendIds.length === 0) return null
-    // Note: where in array is limited to 10. For MVP this works as user requested 10 limit.
+    // Note: where in array is limited to 30. For MVP this works as user requested 20 limit.
     return query(collection(db, "users"), where("id", "in", friendIds))
   }, [db, friendIds])
 
@@ -113,7 +113,7 @@ export function FriendCircles() {
         <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
           <DialogHeader>
             <DialogTitle className="font-headline font-bold uppercase">MANAGE FRIENDS</DialogTitle>
-            <DialogDescription>YOUR TERMINAL CONNECTIONS ({sortedFriends.length}/10)</DialogDescription>
+            <DialogDescription>YOUR TERMINAL CONNECTIONS ({sortedFriends.length}/20)</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
             {sortedFriends.map(friend => {
