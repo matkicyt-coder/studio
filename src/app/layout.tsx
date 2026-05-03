@@ -1,7 +1,9 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { BanGate } from '@/components/auth/ban-gate';
 
 export const metadata: Metadata = {
   title: 'Digital Portal',
@@ -22,7 +24,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
         <FirebaseClientProvider>
-          {children}
+          <BanGate>
+            {children}
+          </BanGate>
           <Toaster />
         </FirebaseClientProvider>
       </body>

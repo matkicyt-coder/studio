@@ -25,7 +25,9 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  ExternalLink
+  ExternalLink,
+  Ban,
+  Eraser
 } from "lucide-react"
 import {
   Dialog,
@@ -114,6 +116,88 @@ export default function AdminPage() {
           title: "Admin status updated",
           description: `${targetUser.username} is now ${updateData.isAdmin ? "an administrator" : "a standard user"}.`,
         })
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: targetRef.path,
+          operation: "update",
+          requestResourceData: updateData,
+        }))
+      })
+      .finally(() => setIsUpdating(false))
+  }
+
+  const handleApplyBan = async (targetUserId: string, type: 'warning' | 'temp-1' | 'temp-7' | 'perm', reason: string, offensiveContent?: string) => {
+    if (!db) return
+    setIsUpdating(true)
+    const targetRef = doc(db, "users", targetUserId)
+    
+    let expiry = null
+    if (type === 'temp-1') {
+      expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    } else if (type === 'temp-7') {
+      expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    }
+
+    const updateData: any = {
+      isBanned: type !== 'none',
+      banType: type,
+      banReason: reason,
+      banExpiry: expiry,
+      banOffensiveContent: offensiveContent || "",
+      needsToAcceptTerms: type === 'warning'
+    }
+
+    updateDoc(targetRef, updateData)
+      .then(() => {
+        toast({ title: "Sanction Applied", description: `User punished with ${type}.` })
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: targetRef.path,
+          operation: "update",
+          requestResourceData: updateData,
+        }))
+      })
+      .finally(() => setIsUpdating(false))
+  }
+
+  const handleRemoveBan = async (targetUserId: string) => {
+    if (!db) return
+    setIsUpdating(true)
+    const targetRef = doc(db, "users", targetUserId)
+    const updateData = {
+      isBanned: false,
+      banType: "none",
+      banReason: "",
+      banExpiry: null,
+      banOffensiveContent: "",
+      needsToAcceptTerms: false
+    }
+
+    updateDoc(targetRef, updateData)
+      .then(() => {
+        toast({ title: "Sanctions Removed" })
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: targetRef.path,
+          operation: "update",
+          requestResourceData: updateData,
+        }))
+      })
+      .finally(() => setIsUpdating(false))
+  }
+
+  const handleDeleteDescription = async (targetUserId: string) => {
+    if (!db) return
+    setIsUpdating(true)
+    const targetRef = doc(db, "users", targetUserId)
+    const updateData = { description: "Content Deleted" }
+
+    updateDoc(targetRef, updateData)
+      .then(() => {
+        toast({ title: "Content Redacted" })
       })
       .catch(async (error) => {
         errorEmitter.emit("permission-error", new FirestorePermissionError({
@@ -264,7 +348,7 @@ export default function AdminPage() {
               <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
-          <h1 className="text-4xl font-headline font-bold tracking-tighter">Admin Panel</h1>
+          <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase">Admin Panel</h1>
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
@@ -302,6 +386,7 @@ export default function AdminPage() {
                       <span className="font-medium text-lg flex items-center gap-2">
                         {userItem.username}
                         {userItem.isAdmin && <ShieldCheck className="h-4 w-4 text-primary" />}
+                        {userItem.isBanned && <Badge variant="destructive" className="h-4 text-[8px] uppercase">{userItem.banType}</Badge>}
                       </span>
                       <span className="text-muted-foreground text-[10px] font-headline uppercase tracking-widest">
                         ID: #{userItem.sequentialId} | Coins: {userItem.coins ?? 0}
@@ -328,7 +413,7 @@ export default function AdminPage() {
                     <DialogContent className="bg-background border-border sm:max-w-[425px]">
                       <DialogHeader>
                         <div className="flex items-center justify-between pr-8">
-                          <DialogTitle className="font-headline font-bold text-2xl">{userItem.username}</DialogTitle>
+                          <DialogTitle className="font-headline font-bold text-2xl uppercase">{userItem.username}</DialogTitle>
                           <Link href={`/profile/${userItem.sequentialId}`} target="_blank">
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                               <ExternalLink className="h-4 w-4" />
@@ -338,7 +423,7 @@ export default function AdminPage() {
                         <DialogDescription>Manage user privileges and account details.</DialogDescription>
                       </DialogHeader>
 
-                      <div className="py-6 space-y-8">
+                      <div className="py-6 space-y-8 max-h-[60vh] overflow-y-auto pr-2">
                         <div className="space-y-2">
                           <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Permissions</label>
                           <Button
@@ -349,6 +434,19 @@ export default function AdminPage() {
                           >
                             {userItem.isAdmin ? "Remove Admin Privileges" : "Grant Admin Privileges"}
                           </Button>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Moderation</label>
+                          <div className="grid grid-cols-1 gap-2">
+                            {userItem.isBanned ? (
+                              <Button variant="outline" onClick={() => handleRemoveBan(userItem.id)} className="w-full font-headline font-bold uppercase text-[10px]">
+                                Remove All Sanctions
+                              </Button>
+                            ) : (
+                              <p className="text-[10px] text-muted-foreground italic text-center">No active bans. Use reports to apply sanctions.</p>
+                            )}
+                          </div>
                         </div>
 
                         <div className="space-y-2">
@@ -487,7 +585,7 @@ export default function AdminPage() {
                 {activeReport && (
                   <>
                     <DialogHeader>
-                      <DialogTitle className="font-headline font-bold text-2xl flex items-center gap-2">
+                      <DialogTitle className="font-headline font-bold text-2xl flex items-center gap-2 uppercase">
                         <ShieldAlert className="h-6 w-6 text-destructive" />
                         Inspect Report
                       </DialogTitle>
@@ -496,7 +594,7 @@ export default function AdminPage() {
                       </DialogDescription>
                     </DialogHeader>
 
-                    <div className="py-6 space-y-6">
+                    <div className="py-6 space-y-6 max-h-[70vh] overflow-y-auto pr-2">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Target Object</h4>
@@ -521,7 +619,7 @@ export default function AdminPage() {
                           <div className="flex flex-col gap-1">
                             <p className="font-medium">{activeReport.targetUsername}</p>
                             {targetProfile && (
-                              <Link href={`/profile/${targetProfile.sequentialId}`}>
+                              <Link href={`/profile/${targetProfile.sequentialId}`} target="_blank">
                                 <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary uppercase font-bold tracking-widest">View Profile</Button>
                               </Link>
                             )}
@@ -532,7 +630,7 @@ export default function AdminPage() {
                           <div className="flex flex-col gap-1">
                             <p className="font-medium">{activeReport.reporterUsername}</p>
                             {reporterProfile && (
-                              <Link href={`/profile/${reporterProfile.sequentialId}`}>
+                              <Link href={`/profile/${reporterProfile.sequentialId}`} target="_blank">
                                 <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary uppercase font-bold tracking-widest">View Profile</Button>
                               </Link>
                             )}
@@ -541,7 +639,19 @@ export default function AdminPage() {
                       </div>
 
                       <div className="space-y-4 pt-4 border-t border-border/50">
-                        <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Set Status</h4>
+                        <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Content Control</h4>
+                        <Button 
+                          onClick={() => handleDeleteDescription(activeReport.targetUserId)}
+                          disabled={isUpdating}
+                          variant="outline" 
+                          className="w-full h-12 font-headline font-bold uppercase text-[10px] gap-2"
+                        >
+                          <Eraser className="h-4 w-4 text-destructive" /> Redact Description
+                        </Button>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t border-border/50">
+                        <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Set Report Status</h4>
                         <div className="grid grid-cols-3 gap-2">
                           <Button 
                             variant={activeReport.status === 'solved' ? "default" : "outline"}
@@ -571,22 +681,41 @@ export default function AdminPage() {
                       </div>
 
                       <div className="space-y-4 pt-4 border-t border-border/50">
-                        <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Moderation Actions</h4>
+                        <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Moderation Sanctions</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-[8px] font-bold uppercase tracking-widest">
-                            Warn
+                          <Button 
+                            onClick={() => handleApplyBan(activeReport.targetUserId, 'warning', activeReport.reason, targetProfile?.description)}
+                            disabled={isUpdating}
+                            variant="outline" 
+                            className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
+                          >
+                            <AlertTriangle className="h-3 w-3 text-yellow-500" /> Warn
                           </Button>
-                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-[8px] font-bold uppercase tracking-widest">
-                            Perm Ban
+                          <Button 
+                            onClick={() => handleApplyBan(activeReport.targetUserId, 'perm', activeReport.reason, targetProfile?.description)}
+                            disabled={isUpdating}
+                            variant="destructive" 
+                            className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
+                          >
+                            <Ban className="h-3 w-3" /> Perm Ban
                           </Button>
-                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-[8px] font-bold uppercase tracking-widest">
-                            Temp Ban (1D)
+                          <Button 
+                            onClick={() => handleApplyBan(activeReport.targetUserId, 'temp-1', activeReport.reason, targetProfile?.description)}
+                            disabled={isUpdating}
+                            variant="outline" 
+                            className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
+                          >
+                            <Clock className="h-3 w-3" /> Temp Ban (1D)
                           </Button>
-                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-[8px] font-bold uppercase tracking-widest">
-                            Temp Ban (7D)
+                          <Button 
+                            onClick={() => handleApplyBan(activeReport.targetUserId, 'temp-7', activeReport.reason, targetProfile?.description)}
+                            disabled={isUpdating}
+                            variant="outline" 
+                            className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
+                          >
+                            <Clock className="h-3 w-3" /> Temp Ban (7D)
                           </Button>
                         </div>
-                        <p className="text-[10px] text-muted-foreground italic text-center font-headline uppercase tracking-tighter opacity-50">Moderation actions are currently in development.</p>
                       </div>
                     </div>
 

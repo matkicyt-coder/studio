@@ -45,6 +45,15 @@
           "items": { "type": "string" },
           "description": "List of previous usernames used by the user."
         },
+        "isBanned": { "type": "boolean" },
+        "banType": { 
+          "type": "string", 
+          "enum": ["none", "warning", "temp-1", "temp-7", "perm"] 
+        },
+        "banReason": { "type": "string" },
+        "banExpiry": { "type": "string", "format": "date-time" },
+        "banOffensiveContent": { "type": "string" },
+        "needsToAcceptTerms": { "type": "boolean" },
         "createdAt": {
           "type": "string",
           "description": "Timestamp of account creation.",
