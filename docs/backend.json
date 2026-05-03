@@ -15,6 +15,10 @@
           "type": "string",
           "description": "Chosen username."
         },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User's linked phone number."
+        },
         "description": {
           "type": "string",
           "description": "User's self-written bio."

@@ -9,7 +9,7 @@ import { doc, updateDoc, increment, arrayUnion } from "firebase/firestore"
 import { updatePassword } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, Loader2, Lock, User, ShieldAlert, Sun, Moon, Calendar, ShieldCheck } from "lucide-react"
+import { Pencil, Loader2, Lock, User, ShieldAlert, Sun, Moon, Calendar, ShieldCheck, Smartphone } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import {
   Dialog,
@@ -45,11 +45,13 @@ export default function SettingsPage() {
   const [newUsername, setNewUsername] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [newDob, setNewDob] = useState("")
+  const [newPhone, setNewPhone] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
   
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false)
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
   const [isDobDialogOpen, setIsDobDialogOpen] = useState(false)
+  const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState(false)
   const [isParentalLockConfirmOpen, setIsParentalLockConfirmOpen] = useState(false)
   
   const [theme, setTheme] = useState<"light" | "dark">("light")
@@ -153,6 +155,27 @@ export default function SettingsPage() {
     } finally {
       setIsUpdating(false)
     }
+  }
+
+  const handleUpdatePhone = async () => {
+    if (!userDocRef || !newPhone) return
+    setIsUpdating(true)
+    const updateData = { phoneNumber: newPhone }
+    
+    updateDoc(userDocRef, updateData)
+      .then(() => {
+        toast({ title: "Phone number linked!" })
+        setNewPhone("")
+        setIsPhoneDialogOpen(false)
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: "update",
+          requestResourceData: updateData,
+        }))
+      })
+      .finally(() => setIsUpdating(false))
   }
 
   const handleDobUpdateAttempt = () => {
@@ -298,10 +321,53 @@ export default function SettingsPage() {
             </Dialog>
           </div>
 
+          {/* Phone Number Section */}
+          <div className="flex items-center justify-between group pt-4 border-t border-border">
+            <div className="space-y-1">
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Phone Number</p>
+              <h2 className="text-xl font-medium">{userData?.phoneNumber || "Not linked"}</h2>
+            </div>
+            <Dialog open={isPhoneDialogOpen} onOpenChange={setIsPhoneDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-background border-border sm:rounded-3xl">
+                <DialogHeader>
+                  <DialogTitle className="font-headline font-bold text-xl uppercase">Link Phone Number</DialogTitle>
+                  <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Link your phone to use it for quick login.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                  <div className="relative">
+                    <Smartphone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="e.g. +1234567890"
+                      value={newPhone}
+                      onChange={(e) => setNewPhone(e.target.value)}
+                      className="pl-10 h-12"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    onClick={handleUpdatePhone} 
+                    disabled={isUpdating || !newPhone}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
+                  >
+                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Number"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
           {/* Age/DOB Section */}
           <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="space-y-1">
-              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Age</p>
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Birth Date</p>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-medium uppercase">{userData?.dateOfBirth || "NOT SET"}</h2>
                 {isParentalMode && (
@@ -376,7 +442,7 @@ export default function SettingsPage() {
                   className="w-full h-12 bg-secondary/50 border-border font-headline font-bold gap-2 uppercase text-xs tracking-widest"
                 >
                   <ShieldAlert className="h-5 w-5 text-destructive" />
-                  Admin Terminal
+                  Admin Dashboard
                 </Button>
               </Link>
             </div>
