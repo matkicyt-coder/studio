@@ -107,7 +107,7 @@ export default function SettingsPage() {
     if (currentCoins < 1000) {
       toast({
         variant: "destructive",
-        title: "Insufficient Coins",
+        title: "Insufficient coins",
         description: "You need 1,000 coins to change your username.",
       })
       setIsUsernameDialogOpen(false)
@@ -125,7 +125,7 @@ export default function SettingsPage() {
       .then(() => {
         toast({
           title: "Success",
-          description: "Username updated successfully for 1000 coins.",
+          description: "Username updated for 1000 coins.",
         })
         setNewUsername("")
         setIsUsernameDialogOpen(false)
@@ -145,7 +145,7 @@ export default function SettingsPage() {
     if (newPassword.length < 8) {
       toast({
         variant: "destructive",
-        title: "Weak Password",
+        title: "Weak password",
         description: "Password must be at least 8 characters long.",
       })
       return
@@ -163,7 +163,7 @@ export default function SettingsPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Update Failed",
+        title: "Update failed",
         description: error.message || "Please re-login to change your password.",
       })
     } finally {
@@ -184,13 +184,13 @@ export default function SettingsPage() {
       setConfirmationResult(result)
       setPhoneStep('verify')
       toast({
-        title: "Code Sent",
-        description: `A real verification code has been sent to ${newPhone}.`,
+        title: "Code sent",
+        description: `A verification code has been sent to ${newPhone}.`,
       })
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Failed to send SMS",
+        title: "Failed to send code",
         description: error.message,
       })
     } finally {
@@ -207,7 +207,7 @@ export default function SettingsPage() {
       const updateData = { phoneNumber: newPhone }
       await updateDoc(userDocRef, updateData)
       
-      toast({ title: "Phone Linked Successfully!" })
+      toast({ title: "Phone linked successfully!" })
       setNewPhone("")
       setPhoneVerificationCode("")
       setPhoneStep('input')
@@ -216,7 +216,7 @@ export default function SettingsPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Invalid Code",
+        title: "Invalid code",
         description: "The verification code you entered is incorrect.",
       })
     } finally {
@@ -229,24 +229,19 @@ export default function SettingsPage() {
     setIsUpdating(true)
     
     try {
-      // Step 1: Update the email on the user object (requires recent login)
       await updateEmail(user, newEmail)
-      
-      // Step 2: Send a real verification link
       await sendEmailVerification(user)
-      
-      // Step 3: Update Firestore
       await updateDoc(userDocRef, { email: newEmail })
       
       toast({
-        title: "Verification Sent",
-        description: `A real verification link has been sent to ${newEmail}. Please click it to verify.`,
+        title: "Verification sent",
+        description: `A verification link has been sent to ${newEmail}. Please click it to verify.`,
       })
       setIsEmailDialogOpen(false)
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Update Failed",
+        title: "Update failed",
         description: error.message || "Please re-login to update your email.",
       })
     } finally {
@@ -258,8 +253,8 @@ export default function SettingsPage() {
     if (isParentalMode) {
       toast({
         variant: "destructive",
-        title: "Action Restricted",
-        description: "You cannot change your birth date while Parental Mode is active.",
+        title: "Action restricted",
+        description: "You cannot change your birth date while parental mode is active.",
       })
       return
     }
@@ -278,7 +273,7 @@ export default function SettingsPage() {
     
     updateDoc(userDocRef, { dateOfBirth: newDob })
       .then(() => {
-        toast({ title: "Birth Date Updated" })
+        toast({ title: "Birth date updated" })
         setIsDobDialogOpen(false)
         setIsParentalLockConfirmOpen(false)
       })
@@ -304,7 +299,6 @@ export default function SettingsPage() {
     <main className="min-h-screen bg-background w-full pt-16 flex flex-col">
       <NavigationBar />
       
-      {/* Container for invisible Recaptcha */}
       <div id="recaptcha-container"></div>
 
       <div className="max-w-xl mx-auto w-full p-6 space-y-12 animate-fade-in">
@@ -313,7 +307,6 @@ export default function SettingsPage() {
         </h1>
 
         <div className="space-y-8 bg-card p-8 rounded-2xl border border-border shadow-sm">
-          {/* Identity Section */}
           <div className="space-y-6">
             <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest border-b border-border pb-2">Identity</p>
             
@@ -324,22 +317,22 @@ export default function SettingsPage() {
               </div>
               <Dialog open={isUsernameDialogOpen} onOpenChange={setIsUsernameDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
+                  <Button variant="ghost" size="icon" className="rounded-full transition-all">
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-background border-border sm:rounded-3xl">
                   <DialogHeader>
-                    <DialogTitle className="font-headline font-bold text-xl uppercase">Change Username</DialogTitle>
+                    <DialogTitle className="font-headline font-bold text-xl uppercase">Change username</DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
-                      This operation costs <span className="text-yellow-600 font-bold">1,000 coins</span>. 
+                      This costs <span className="text-yellow-600 font-bold">1,000 coins</span>. 
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4">
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="New Username"
+                        placeholder="New username"
                         value={newUsername}
                         onChange={(e) => setNewUsername(e.target.value)}
                         className="pl-10 h-12"
@@ -352,7 +345,7 @@ export default function SettingsPage() {
                       disabled={isUpdating || !newUsername}
                       className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                     >
-                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm Change"}
+                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm change"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -366,13 +359,13 @@ export default function SettingsPage() {
               </div>
               <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
+                  <Button variant="ghost" size="icon" className="rounded-full transition-all">
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-background border-border sm:rounded-3xl">
                   <DialogHeader>
-                    <DialogTitle className="font-headline font-bold text-xl uppercase">Change Password</DialogTitle>
+                    <DialogTitle className="font-headline font-bold text-xl uppercase">Change password</DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                       Secure your account with a new password.
                     </DialogDescription>
@@ -382,7 +375,7 @@ export default function SettingsPage() {
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         type="password"
-                        placeholder="New Password"
+                        placeholder="New password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         className="pl-10 h-12"
@@ -395,7 +388,7 @@ export default function SettingsPage() {
                       disabled={isUpdating || !newPassword}
                       className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                     >
-                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Password"}
+                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update password"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -404,20 +397,20 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between group">
               <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Email Address</p>
+                <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Email address</p>
                 <h2 className="text-xl font-medium truncate max-w-[200px]">{userData?.email || "Not linked"}</h2>
               </div>
               <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
+                  <Button variant="ghost" size="icon" className="rounded-full transition-all">
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-background border-border sm:rounded-3xl">
                   <DialogHeader>
-                    <DialogTitle className="font-headline font-bold text-xl uppercase">Link Email</DialogTitle>
+                    <DialogTitle className="font-headline font-bold text-xl uppercase">Link email</DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Enter your email to receive a real verification link.
+                      We'll send a verification link to your email.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4">
@@ -438,7 +431,7 @@ export default function SettingsPage() {
                       disabled={isUpdating || !newEmail}
                       className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                     >
-                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Link"}
+                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send link"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -447,7 +440,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between group">
               <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Phone Number</p>
+                <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Phone number</p>
                 <h2 className="text-xl font-medium">{userData?.phoneNumber || "Not linked"}</h2>
               </div>
               <Dialog open={isPhoneDialogOpen} onOpenChange={(open) => {
@@ -459,18 +452,18 @@ export default function SettingsPage() {
                 }
               }}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
+                  <Button variant="ghost" size="icon" className="rounded-full transition-all">
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-background border-border sm:rounded-3xl">
                   <DialogHeader>
                     <DialogTitle className="font-headline font-bold text-xl uppercase">
-                      {phoneStep === 'input' ? "Link Phone Number" : "Verify SMS"}
+                      {phoneStep === 'input' ? "Link phone number" : "Verify code"}
                     </DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                       {phoneStep === 'input' 
-                        ? "Link your phone for real SMS security." 
+                        ? "Link your phone for secure logins." 
                         : `Enter the code sent to ${newPhone}.`}
                     </DialogDescription>
                   </DialogHeader>
@@ -505,7 +498,7 @@ export default function SettingsPage() {
                         disabled={isUpdating || !newPhone}
                         className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                       >
-                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send SMS Code"}
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send SMS code"}
                       </Button>
                     ) : (
                       <Button 
@@ -513,7 +506,7 @@ export default function SettingsPage() {
                         disabled={isUpdating || !phoneVerificationCode}
                         className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                       >
-                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify Code"}
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify code"}
                       </Button>
                     )}
                   </DialogFooter>
@@ -522,36 +515,35 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Personalization Section */}
           <div className="space-y-6 pt-4 border-t border-border">
-             <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest border-b border-border pb-2">Profile & Display</p>
+             <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest border-b border-border pb-2">Hub display</p>
              
              <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Birth Date</p>
+                <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Birth date</p>
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-medium uppercase">{userData?.dateOfBirth || "NOT SET"}</h2>
                   {isParentalMode && (
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
                       <ShieldCheck className="h-3 w-3 text-primary" />
-                      <span className="text-[8px] font-headline font-bold uppercase text-primary tracking-widest">Parental Mode Active</span>
+                      <span className="text-[8px] font-headline font-bold uppercase text-primary tracking-widest">Parental mode active</span>
                     </div>
                   )}
                 </div>
               </div>
               <Dialog open={isDobDialogOpen} onOpenChange={setIsDobDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
+                  <Button variant="ghost" size="icon" className="rounded-full transition-all">
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-background border-border sm:rounded-3xl">
                   <DialogHeader>
-                    <DialogTitle className="font-headline font-bold text-xl uppercase">Update Birth Date</DialogTitle>
+                    <DialogTitle className="font-headline font-bold text-xl uppercase">Update birth date</DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                       {isParentalMode 
-                        ? "Birth date changes are locked while Parental Mode is active." 
-                        : "Warning: Setting a date that makes you under 18 will activate permanent Parental Mode."}
+                        ? "Birth date is locked in parental mode." 
+                        : "Note: Setting a date under 18 will activate parental mode."}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4">
@@ -572,7 +564,7 @@ export default function SettingsPage() {
                       disabled={isUpdating || !newDob || isParentalMode}
                       className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                     >
-                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Save"}
+                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & save"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -581,10 +573,10 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Visual Mode</p>
+                <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Visual mode</p>
                 <div className="flex items-center gap-2">
                   {theme === "light" ? <Sun className="h-5 w-5 text-primary" /> : <Moon className="h-5 w-5 text-primary" />}
-                  <span className="text-sm font-medium font-headline uppercase tracking-tight">{theme === "light" ? "White Mode" : "Black Mode"}</span>
+                  <span className="text-sm font-medium font-headline uppercase tracking-tight">{theme === "light" ? "Light Mode" : "Dark Mode"}</span>
                 </div>
               </div>
               <Switch 
@@ -594,7 +586,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Admin Panel Button */}
           {userData?.isAdmin && (
             <div className="pt-4 border-t border-border">
               <Link href="/admin">
@@ -603,7 +594,7 @@ export default function SettingsPage() {
                   className="w-full h-12 bg-secondary/50 border-border font-headline font-bold gap-2 uppercase text-xs tracking-widest"
                 >
                   <ShieldAlert className="h-5 w-5 text-destructive" />
-                  Admin Dashboard
+                  Admin panel
                 </Button>
               </Link>
             </div>
@@ -615,16 +606,16 @@ export default function SettingsPage() {
         <AlertDialogContent className="bg-background border-border sm:rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-headline font-bold text-xl uppercase text-destructive flex items-center gap-2">
-              <ShieldAlert className="h-6 w-6" /> Irreversible Action
+              <ShieldAlert className="h-6 w-6" /> Safety warning
             </AlertDialogTitle>
             <AlertDialogDescription className="font-headline text-xs uppercase tracking-tight text-muted-foreground leading-relaxed">
-              Changing your birth date to make you under 18 will activate **Parental Mode**.
+              Activating **Parental Mode** is irreversible.
               <br /><br />
-              - All purchases will be permanently locked.
+              - Purchases will be locked.
               <br />
-              - You will NOT be able to change your age or birth date back.
+              - Age changes will be disabled.
               <br /><br />
-              Are you sure you want to proceed?
+              Proceed with activation?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
@@ -633,7 +624,7 @@ export default function SettingsPage() {
               onClick={applyDobUpdate}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-headline font-bold uppercase text-[10px] tracking-widest h-12"
             >
-              Confirm Parental Mode
+              Confirm activation
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
