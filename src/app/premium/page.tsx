@@ -56,8 +56,8 @@ export default function PremiumPage() {
     updateDoc(userDocRef, updateData)
       .then(() => {
         toast({
-          title: "Premium Activated",
-          description: "Welcome to the Premium Club! You've earned your exclusive badge.",
+          title: "Success!",
+          description: "Welcome to the Premium Club! You've earned your badge.",
         })
       })
       .catch(async (error) => {
@@ -79,13 +79,12 @@ export default function PremiumPage() {
   }
 
   const perks = [
-    { icon: Star, text: "10 Best Friends", sub: "Double the standard limit" },
-    { icon: Coins, text: "10K Monthly Coins", sub: "Bonus currency every month" },
-    { icon: Award, text: "Elite Badge", sub: "Exclusive badge next to your name" },
+    { icon: Star, text: "10 Best Friends", sub: "Standard limit is 5" },
+    { icon: Coins, text: "10K Monthly Coins", sub: "Free bonus every month" },
+    { icon: Award, text: "Elite Badge", sub: "Visible on your profile" },
     { icon: Sparkles, text: "Priority Status", sub: "Stand out in the community" },
   ]
 
-  // Dashboard View for Premium Members
   if (userData?.isPremium) {
     return (
       <main className="min-h-screen bg-[#F2F4F5] dark:bg-black w-full pt-24 px-4 pb-20 font-body">
@@ -95,45 +94,41 @@ export default function PremiumPage() {
             <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full bg-white shadow-sm border border-border dark:bg-card">
               <ArrowLeft className="h-6 w-6" />
             </Button>
-            <h1 className="text-4xl sm:text-6xl font-headline font-bold tracking-tight text-[#111] dark:text-white uppercase italic">
-              Premium Dashboard
+            <h1 className="text-4xl sm:text-7xl font-headline font-bold tracking-tight text-[#111] dark:text-white uppercase italic">
+              Dashboard
             </h1>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Status Card */}
             <div className="bg-white dark:bg-[#111] border-4 border-amber-500 p-8 rounded-[40px] shadow-xl flex flex-col items-center justify-center text-center space-y-4">
               <Crown className="h-16 w-16 text-amber-500" />
               <div>
-                <p className="font-headline font-bold text-2xl uppercase italic">Lifetime Member</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em]">Active Forever</p>
+                <p className="font-headline font-bold text-2xl uppercase italic">Lifetime</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em]">Always Active</p>
               </div>
             </div>
 
-            {/* Coins Card */}
             <div className="bg-white dark:bg-[#111] border-4 border-primary p-8 rounded-[40px] shadow-xl flex flex-col items-center justify-center text-center space-y-4">
               <Coins className="h-16 w-16 text-primary" />
               <div>
                 <p className="font-headline font-bold text-2xl uppercase italic">{formatCurrency(userData.coins || 0)}</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em]">Current Balance</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em]">Your Balance</p>
               </div>
             </div>
 
-            {/* Badge Card */}
             <div className="bg-white dark:bg-[#111] border-4 border-[#ddd] dark:border-[#222] p-8 rounded-[40px] shadow-xl flex flex-col items-center justify-center text-center space-y-4">
               <PremiumBadge className="h-16 w-16" />
               <div>
-                <p className="font-headline font-bold text-2xl uppercase italic">Elite Status</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em]">Profile Badge Active</p>
+                <p className="font-headline font-bold text-2xl uppercase italic">Elite</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em]">Badge Enabled</p>
               </div>
             </div>
           </div>
 
-          {/* Perks Section */}
           <div className="bg-white dark:bg-[#111] border-4 border-[#ddd] dark:border-[#222] p-10 rounded-[40px] shadow-2xl space-y-8">
             <div className="flex items-center gap-4">
               <Sparkles className="h-8 w-8 text-amber-500" />
-              <h2 className="text-3xl font-headline font-bold uppercase italic tracking-tighter">Your Active Perks</h2>
+              <h2 className="text-3xl font-headline font-bold uppercase italic tracking-tighter">Active Benefits</h2>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
@@ -155,7 +150,6 @@ export default function PremiumPage() {
     )
   }
 
-  // Standard Upgrade Page View
   return (
     <main className="min-h-screen bg-[#F2F4F5] dark:bg-black w-full pt-24 px-4 pb-20 font-body">
       <NavigationBar />
@@ -164,8 +158,8 @@ export default function PremiumPage() {
           <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full bg-white shadow-sm border border-border dark:bg-card">
             <ArrowLeft className="h-6 w-6" />
           </Button>
-          <h1 className="text-4xl sm:text-6xl font-headline font-bold tracking-tight text-[#111] dark:text-white uppercase italic">
-            Go Premium
+          <h1 className="text-4xl sm:text-8xl font-headline font-bold tracking-tight text-[#111] dark:text-white uppercase italic">
+            Premium
           </h1>
         </div>
 
@@ -177,7 +171,7 @@ export default function PremiumPage() {
             
             <div className="flex items-center gap-4">
               <PremiumBadge className="h-16 w-16" />
-              <h2 className="text-3xl font-headline font-bold uppercase italic tracking-tighter">Member Perks</h2>
+              <h2 className="text-3xl font-headline font-bold uppercase italic tracking-tighter">Membership</h2>
             </div>
 
             <ul className="space-y-6 pt-4">
@@ -199,10 +193,10 @@ export default function PremiumPage() {
             <Button 
               onClick={() => handleBuyPremium(false)}
               disabled={isUpdating}
-              className="h-24 bg-primary text-white text-2xl font-headline font-bold uppercase tracking-tighter rounded-[30px] shadow-[0_8px_0_0_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_10px_0_0_rgba(14,165,233,0.3)] active:translate-y-[4px] active:shadow-none transition-all"
+              className="h-24 bg-primary text-white text-3xl font-headline font-bold uppercase tracking-tighter rounded-[30px] shadow-[0_8px_0_0_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_10px_0_0_rgba(14,165,233,0.3)] active:translate-y-[4px] active:shadow-none transition-all"
             >
               {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Coins className="mr-3 h-8 w-8" />}
-              Upgrade for 20K Coins
+              20K Coins
             </Button>
             
             <Button 
@@ -211,12 +205,8 @@ export default function PremiumPage() {
               variant="outline"
               className="h-16 bg-white dark:bg-[#111] border-4 border-[#ddd] dark:border-[#222] font-headline font-bold uppercase text-xs tracking-widest rounded-[24px] hover:bg-accent"
             >
-              Free Lifetime Pass
+              Get it Free
             </Button>
-            
-            <p className="text-center text-[11px] text-muted-foreground font-bold uppercase tracking-[0.2em] px-8 leading-relaxed">
-              Join the club and unlock all elite features forever.
-            </p>
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { doc, updateDoc } from "firebase/firestore"
+import { doc, updateDoc, arrayUnion } from "firebase/firestore"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { PremiumBadge } from "@/components/premium-badge"
 import { FriendCircles } from "@/components/friends/friend-circles"
@@ -40,11 +40,29 @@ export default function HomePage() {
     return () => clearInterval(interval)
   }, [db, user?.uid])
 
+  // Sync missing badges based on status
+  useEffect(() => {
+    if (!db || !user?.uid || !userData) return
+    
+    const missingBadges = []
+    if (userData.isAdmin && !userData.badges?.includes('admin')) {
+      missingBadges.push('admin')
+    }
+    if (userData.isPremium && !userData.badges?.includes('premium')) {
+      missingBadges.push('premium')
+    }
+    
+    if (missingBadges.length > 0) {
+      updateDoc(doc(db, "users", user.uid), {
+        badges: arrayUnion(...missingBadges)
+      })
+    }
+  }, [db, user?.uid, userData])
+
   if (isUserLoading || !user) {
     return null
   }
 
-  // Priority logic for the welcome badge
   const renderWelcomeBadge = () => {
     if (userData?.isAdmin) return <ShieldCheck className="h-7 w-7 text-primary" />
     if (userData?.isVerified) return <VerifiedBadge className="h-7 w-7" />

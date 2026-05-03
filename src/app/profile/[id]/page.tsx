@@ -102,7 +102,6 @@ export default function ProfilePage() {
   const { data: userDataList, isLoading } = useCollection(userQuery)
   const profileUser = userDataList?.[0]
 
-  // Friend logic (current user context)
   const friendshipsQuery1 = useMemoFirebase(() => {
     if (!db || !user?.uid || !profileUser) return null
     return query(collection(db, "friendships"), where("user1", "==", user.uid), where("user2", "==", profileUser.id))
@@ -128,7 +127,6 @@ export default function ProfilePage() {
   const { data: tf2 } = useCollection(totalFriendsCountQuery2)
   const totalFriendsCount = (tf1?.length || 0) + (tf2?.length || 0)
 
-  // Fetch friends of the profile user
   const profileFriendshipsQuery1 = useMemoFirebase(() => {
     if (!db || !profileUser) return null
     return query(collection(db, "friendships"), where("user1", "==", profileUser.id), where("status", "==", "accepted"))
@@ -264,9 +262,9 @@ export default function ProfilePage() {
   }
 
   if (!profileUser) return (
-    <main className="min-h-screen bg-background w-full pt-24 px-6">
+    <main className="min-h-screen bg-background w-full pt-24 px-6 text-center">
       <NavigationBar />
-      <div className="max-w-xl mx-auto text-center space-y-6">
+      <div className="max-w-xl mx-auto space-y-6">
         <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto" />
         <h1 className="text-2xl sm:text-3xl font-headline font-bold">User not found</h1>
         <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 font-bold text-xs">
@@ -278,12 +276,12 @@ export default function ProfilePage() {
 
   const isPermBanned = profileUser.isBanned && profileUser.banType === 'perm'
   if (isPermBanned) return (
-    <main className="min-h-screen bg-background w-full pt-24 px-6">
+    <main className="min-h-screen bg-background w-full pt-24 px-6 text-center">
       <NavigationBar />
-      <div className="max-w-xl mx-auto text-center space-y-6 animate-fade-in">
+      <div className="max-w-xl mx-auto space-y-6 animate-fade-in">
         <ShieldAlert className="h-16 w-16 text-destructive mx-auto" />
         <h1 className="text-2xl sm:text-3xl font-headline font-bold tracking-tighter">Account terminated</h1>
-        <p className="text-muted-foreground font-body text-sm sm:text-base">This profile is no longer available due to a violation of the standards.</p>
+        <p className="text-muted-foreground font-body text-sm sm:text-base">This profile is no longer available.</p>
         <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 font-bold text-xs">
           <ArrowLeft className="h-4 w-4" /> Back home
         </Button>
@@ -307,52 +305,27 @@ export default function ProfilePage() {
           {!isOwnProfile && (
             <div className="flex gap-2">
               {isAccepted ? (
-                <Button 
-                  onClick={() => handleActionFriend('remove')} 
-                  variant="outline"
-                  className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6"
-                >
-                  <UserMinus className="h-4 w-4" />
-                  Remove friend
+                <Button onClick={() => handleActionFriend('remove')} variant="outline" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6">
+                  <UserMinus className="h-4 w-4" /> Remove friend
                 </Button>
               ) : isPending ? (
                 wasSentByMe ? (
-                  <Button 
-                    onClick={() => handleActionFriend('cancel')} 
-                    variant="secondary"
-                    className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6"
-                  >
-                    <UserX className="h-4 w-4" />
-                    Cancel request
+                  <Button onClick={() => handleActionFriend('cancel')} variant="secondary" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6">
+                    <UserX className="h-4 w-4" /> Cancel request
                   </Button>
                 ) : (
                   <>
-                    <Button 
-                      onClick={() => handleActionFriend('accept')} 
-                      variant="default"
-                      className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6"
-                    >
-                      <UserCheck className="h-4 w-4" />
-                      Accept
+                    <Button onClick={() => handleActionFriend('accept')} variant="default" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6">
+                      <UserCheck className="h-4 w-4" /> Accept
                     </Button>
-                    <Button 
-                      onClick={() => handleActionFriend('decline')} 
-                      variant="outline"
-                      className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6 text-destructive"
-                    >
-                      <X className="h-4 w-4" />
-                      Decline
+                    <Button onClick={() => handleActionFriend('decline')} variant="outline" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6 text-destructive">
+                      <X className="h-4 w-4" /> Decline
                     </Button>
                   </>
                 )
               ) : (
-                <Button 
-                  onClick={() => handleActionFriend('add')} 
-                  variant="default"
-                  className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Add friend
+                <Button onClick={() => handleActionFriend('add')} variant="default" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6">
+                  <UserPlus className="h-4 w-4" /> Add friend
                 </Button>
               )}
             </div>
@@ -370,22 +343,19 @@ export default function ProfilePage() {
               )}
             </div>
             <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 truncate">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter flex items-center gap-2 truncate">
-                    {profileUser.username}
-                  </h1>
-                  {profileUser.isPremium && <PremiumBadge className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />}
-                  {profileUser.isVerified && <VerifiedBadge className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />}
-                  {profileUser.isAdmin && <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />}
-                </div>
+              <div className="flex items-center gap-2 truncate">
+                <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter flex items-center gap-2 truncate">
+                  {profileUser.username}
+                </h1>
+                {profileUser.isPremium && <PremiumBadge className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />}
+                {profileUser.isVerified && <VerifiedBadge className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />}
+                {profileUser.isAdmin && <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />}
               </div>
             </div>
           </div>
 
           <div className="space-y-10 pt-4">
             <div className="space-y-6">
-              {/* Description */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Description</h3>
@@ -395,8 +365,8 @@ export default function ProfilePage() {
                   <div className="space-y-3">
                     <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Write something..." className="min-h-[100px] bg-card border-primary/20 text-sm w-full" />
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={handleUpdateDescription} disabled={isSavingDescription} className="font-headline font-bold text-xs flex-1 sm:flex-none">{isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}Save</Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setIsEditingDescription(false); setNewDescription(profileUser.description || ""); }} className="font-headline font-bold text-xs flex-1 sm:flex-none"><X className="h-3 w-3 mr-1" />Cancel</Button>
+                      <Button size="sm" onClick={handleUpdateDescription} disabled={isSavingDescription} className="font-headline font-bold text-xs flex-1 sm:flex-none">{isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />} Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setIsEditingDescription(false); setNewDescription(profileUser.description || ""); }} className="font-headline font-bold text-xs flex-1 sm:flex-none">Cancel</Button>
                     </div>
                   </div>
                 ) : (
@@ -404,7 +374,6 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* Friends Section - Circular Avatars */}
               <div className="space-y-3 pt-2">
                 <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Friends</h3>
                 <div className="flex flex-wrap gap-4">
@@ -427,10 +396,9 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Badges Section */}
               <div className="flex flex-col items-start gap-3 pt-2">
                 <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Achievements</h3>
-                <div className="flex flex-wrap gap-2 justify-start">
+                <div className="flex flex-wrap gap-2">
                   {profileUser.badges?.map((badgeId: string) => {
                     const badge = BADGE_MAP[badgeId]
                     if (!badge) return null
@@ -444,21 +412,10 @@ export default function ProfilePage() {
                     )
                   })}
                   {(!profileUser.badges || profileUser.badges.length === 0) && (
-                    <span className="text-[10px] text-muted-foreground/40 italic">No achievements earned.</span>
+                    <span className="text-[10px] text-muted-foreground/40 italic">No achievements yet.</span>
                   )}
                 </div>
               </div>
-
-              {profileUser.pastUsernames && profileUser.pastUsernames.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Past names</h3>
-                  <div className="flex flex-wrap gap-x-2 gap-y-1">
-                    {profileUser.pastUsernames.map((name: string, i: number) => (
-                      <span key={i} className="text-xs text-muted-foreground/60 italic font-medium">{name}{i < (profileUser.pastUsernames?.length || 0) - 1 ? "," : ""}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-8 border-t border-border/30 gap-6">
@@ -479,7 +436,7 @@ export default function ProfilePage() {
                       <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground">Violation category</label><Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent><SelectItem value="sexual">Sexual content</SelectItem><SelectItem value="inappropriate">Inappropriate behavior</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
                       <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground">Details</label><Textarea placeholder="Describe the issue..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="min-h-[120px] bg-muted/20 text-sm" /></div>
                     </div>
-                    <DialogFooter><Button onClick={handleReport} disabled={isReporting || !reportReason || !currentUserData} variant="destructive" className="w-full h-12 font-headline font-bold text-xs">{isReporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit report"}</Button></DialogFooter>
+                    <DialogFooter><Button onClick={handleReport} disabled={isReporting || !reportReason || !currentUserData} variant="destructive" className="w-full h-12 font-headline font-bold text-xs">{isReporting ? "Reporting..." : "Submit report"}</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               )}
