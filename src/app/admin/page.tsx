@@ -1,11 +1,10 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { collection, query, orderBy, doc, updateDoc, arrayUnion, where, limit } from "firebase/firestore"
+import { collection, query, orderBy, doc, updateDoc, arrayUnion, where, limit, arrayRemove } from "firebase/firestore"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -16,15 +15,17 @@ import {
   Loader2,
   ArrowLeft,
   User as UserIcon,
-  Clock,
   ShieldAlert,
-  History,
   Coins,
   CreditCard,
   Sparkles,
   CheckSquare,
   Square,
-  Zap
+  UserPlus,
+  UserMinus,
+  CheckCircle2,
+  Award,
+  Trash2
 } from "lucide-react"
 import {
   Dialog,
@@ -38,6 +39,7 @@ import { Badge } from "@/components/ui/badge"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { cn } from "@/lib/utils"
 import { reviewReport } from "@/ai/flows/review-report-flow"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function AdminPage() {
   const { user, userDocId, isUserLoading } = useUser()
@@ -63,19 +65,13 @@ export default function AdminPage() {
   }, [db, userData])
   const { data: allUsers } = useCollection(usersQuery)
 
-  const requestsQuery = useMemoFirebase(() => {
-    if (!db || !userData?.isAdmin) return null
-    return query(collection(db, "verificationRequests"), orderBy("requestedAt", "desc"))
-  }, [db, userData])
-  const { data: vRequests } = useCollection(requestsQuery)
-
   const reportsQuery = useMemoFirebase(() => {
     if (!db || !userData?.isAdmin) return null
     return query(collection(db, "reports"), orderBy("createdAt", "desc"), limit(50))
   }, [db, userData])
   const { data: allReports } = useCollection(reportsQuery)
 
-  const inspectingUser = allUsers?.find(u => u.id === inspectingUserId)
+  const inspectingUser = allUsers?.find(u => u.uid === inspectingUserId)
   
   const transactionsQuery = useMemoFirebase(() => {
     if (!db || !inspectingUserId) return null
@@ -88,29 +84,51 @@ export default function AdminPage() {
     if (!isUserLoading && userData && !userData.isAdmin) router.push("/home")
   }, [user, isUserLoading, userData, router])
 
-  const handleApproveVerification = async (req: any) => {
+  const handleUpdateUserStatus = async (uid: string, field: string, value: any) => {
     if (!db) return
     setIsUpdating(true)
-    const uRef = doc(db, "users", req.userId)
-    const rRef = doc(db, "verificationRequests", req.id)
-    
-    await updateDoc(uRef, { isVerified: true })
-    await updateDoc(rRef, { status: "approved" })
-    toast({ title: "User Verified" })
+    const uRef = doc(db, "users", uid)
+    await updateDoc(uRef, { [field]: value })
+    toast({ title: "Status Updated" })
     setIsUpdating(false)
   }
 
-  const handleApplySanction = async (userId: string, type: string, reason: string) => {
+  const handleBadgeToggle = async (uid: string, badgeId: string, hasBadge: boolean) => {
     if (!db) return
-    const uRef = doc(db, "users", userId)
-    const logEntry = { type, reason, timestamp: new Date().toISOString() }
-    
+    const uRef = doc(db, "users", uid)
     await updateDoc(uRef, {
-      isBanned: type !== 'warning' && type !== 'none',
+      badges: hasBadge ? arrayRemove(badgeId) : arrayUnion(badgeId)
+    })
+    toast({ title: "Badge Updated" })
+  }
+
+  const handleApplySanction = async (uid: string, type: string, reason: string) => {
+    if (!db) return
+    const uRef = doc(db, "users", uid)
+    const now = new Date()
+    let expiry = null
+    
+    if (type === 'temp-1') {
+      expiry = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
+    } else if (type === 'temp-7') {
+      expiry = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    }
+
+    const logEntry = { type, reason, timestamp: now.toISOString() }
+    const updateData: any = {
+      isBanned: type !== 'none' && type !== 'warning',
       banType: type,
       banReason: reason,
+      banExpiry: expiry,
+      needsToAcceptTerms: type === 'warning' || type === 'temp-1' || type === 'temp-7',
       moderationHistory: arrayUnion(logEntry)
-    })
+    }
+
+    if (type === 'perm') {
+      updateData.description = "Content Deleted"
+    }
+
+    await updateDoc(uRef, updateData)
     toast({ title: "Sanction Applied" })
   }
 
@@ -132,7 +150,7 @@ export default function AdminPage() {
         const aiSummary = `Verdict: ${review.verdict.toUpperCase()} | Suggested: ${review.suggestedAction.toUpperCase()} | Reasoning: ${review.reasoning}`
         await updateDoc(doc(db, "reports", report.id), { aiReview: aiSummary })
       }
-      toast({ title: "AI Analysis Complete", description: `Processed ${reportIds.length} reports.` })
+      toast({ title: "AI Analysis Complete" })
       setSelectedReports([])
     } catch (e: any) {
       toast({ variant: "destructive", title: "AI Error", description: e.message })
@@ -153,15 +171,16 @@ export default function AdminPage() {
       <NavigationBar />
       <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
         <div className="flex items-center gap-4">
-          <Link href="/settings"><Button variant="ghost" size="icon" className="rounded-full"><ArrowLeft className="h-6 w-6" /></Button></Link>
-          <h1 className="text-3xl font-headline font-bold uppercase tracking-tight">Admin Terminal</h1>
+          <Link href="/home"><Button variant="ghost" size="icon" className="rounded-full"><ArrowLeft className="h-6 w-6" /></Button></Link>
+          <h1 className="text-3xl font-headline font-bold uppercase tracking-tight">Management Dashboard</h1>
         </div>
+        
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="bg-card border h-12 rounded-full grid grid-cols-3 max-w-lg">
-            <TabsTrigger value="users" className="rounded-full text-[10px] font-bold uppercase">Users</TabsTrigger>
-            <TabsTrigger value="requests" className="rounded-full text-[10px] font-bold uppercase">Verify</TabsTrigger>
-            <TabsTrigger value="reports" className="rounded-full text-[10px] font-bold uppercase">Reports</TabsTrigger>
+          <TabsList className="bg-card border h-12 rounded-full grid grid-cols-2 max-w-sm">
+            <TabsTrigger value="users" className="rounded-full text-[10px] font-bold uppercase">User Registry</TabsTrigger>
+            <TabsTrigger value="reports" className="rounded-full text-[10px] font-bold uppercase">Moderation</TabsTrigger>
           </TabsList>
+
           <TabsContent value="users" className="space-y-6">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -169,7 +188,7 @@ export default function AdminPage() {
             </div>
             <div className="grid gap-3">
               {filteredUsers?.map((u) => (
-                <div key={u.id} className="p-4 bg-card border rounded-2xl flex items-center justify-between hover:border-primary/50 transition-all shadow-sm">
+                <div key={u.uid} className="p-4 bg-card border rounded-2xl flex items-center justify-between hover:border-primary/50 transition-all shadow-sm">
                   <div className="flex items-center gap-3">
                     <UserIcon className="h-5 w-5 text-muted-foreground" />
                     <div>
@@ -177,21 +196,21 @@ export default function AdminPage() {
                       <p className="text-[8px] font-headline font-bold text-muted-foreground uppercase tracking-widest">ID #{u.sequentialId}</p>
                     </div>
                   </div>
-                  <Button onClick={() => setInspectingUserId(u.id)} variant="ghost" size="icon" className="rounded-full"><Settings2 className="h-4 w-4" /></Button>
+                  <Button onClick={() => setInspectingUserId(u.uid)} variant="ghost" size="icon" className="rounded-full"><Settings2 className="h-4 w-4" /></Button>
                 </div>
               ))}
             </div>
           </TabsContent>
-          {/* ... other tabs Content remain mostly same, logic uses db and updateDoc ... */}
+
           <TabsContent value="reports" className="space-y-6">
             <div className="flex items-center justify-between bg-card p-4 rounded-2xl border shadow-sm">
               <div className="space-y-1">
-                <h3 className="text-xs font-headline font-bold uppercase tracking-widest">Queue Control</h3>
-                <p className="text-[10px] text-muted-foreground uppercase">{selectedReports.length} Reports Selected</p>
+                <h3 className="text-xs font-headline font-bold uppercase tracking-widest">Incident Queue</h3>
+                <p className="text-[10px] text-muted-foreground uppercase">{selectedReports.length} Selected</p>
               </div>
               <Button onClick={() => handleAiReview(selectedReports)} disabled={selectedReports.length === 0 || isAiProcessing} className="rounded-full font-headline font-bold uppercase text-[10px] gap-2 px-6">
                 {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                AI Review Selection
+                AI Review
               </Button>
             </div>
             <div className="grid gap-4">
@@ -203,55 +222,110 @@ export default function AdminPage() {
                         {selectedReports.includes(report.id) ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
                       </Button>
                       <div>
-                        <p className="font-bold text-sm">Target ID: {report.targetUserId}</p>
+                        <p className="font-bold text-sm">Subject ID: {report.targetUserId}</p>
                         <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase">Reason: {report.reason}</p>
+                        {report.status === 'claimed' && <Badge variant="secondary" className="mt-2 text-[8px] font-bold">CLAIMED</Badge>}
+                        {report.aiReview && <p className="mt-2 text-[8px] text-primary font-medium italic">{report.aiReview}</p>}
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" className="rounded-full text-[8px] font-bold uppercase" onClick={() => handleClaimReport(report.id)}>Claim</Button>
+                    {report.status !== 'claimed' && (
+                      <Button size="sm" variant="outline" className="rounded-full text-[8px] font-bold uppercase" onClick={() => handleClaimReport(report.id)}>Claim</Button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </TabsContent>
         </Tabs>
+
         <Dialog open={!!inspectingUserId} onOpenChange={(open) => !open && setInspectingUserId(null)}>
-          <DialogContent className="max-w-2xl rounded-[40px] max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle className="text-2xl font-headline font-bold uppercase">Inspect Dossier: {inspectingUser?.username}</DialogTitle></DialogHeader>
-            <div className="py-6 space-y-10">
-              <section className="space-y-3">
-                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase flex items-center gap-2"><ShieldCheck className="h-3 w-3" /> Identity & Privileges</h3>
-                <div className="flex flex-wrap gap-2">
-                  {inspectingUser?.isAdmin && <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">ADMINISTRATOR</Badge>}
-                  {inspectingUser?.isPremium && <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20">PREMIUM CLUB</Badge>}
-                  <Badge variant="outline">JOINED {new Date(inspectingUser?.createdAt || "").toLocaleDateString()}</Badge>
-                </div>
-              </section>
-              <section className="space-y-3">
-                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase flex items-center gap-2"><ShieldAlert className="h-3 w-3" /> Moderation Log</h3>
-                <div className="space-y-2">
-                  {inspectingUser?.moderationHistory?.map((log: any, idx: number) => (
-                    <div key={idx} className="p-3 bg-muted/30 rounded-xl flex justify-between items-center text-xs">
-                      <div><span className="font-bold uppercase text-destructive mr-2">{log.type}</span><span className="italic">"{log.reason}"</span></div>
-                      <span className="text-[10px] opacity-50">{new Date(log.timestamp).toLocaleDateString()}</span>
+          <DialogContent className="max-w-2xl rounded-[40px] max-h-[90vh] overflow-y-auto bg-white border-none shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight flex items-center gap-3">
+                <UserIcon className="h-6 w-6" /> 
+                User Profile: {inspectingUser?.username}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="py-6 space-y-8">
+              <section className="grid grid-cols-2 gap-6">
+                <div className="space-y-4 p-6 bg-muted/20 rounded-3xl border border-border/50">
+                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                    <ShieldCheck className="h-3 w-3" /> Privileges
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Verified Status</span>
+                      <Button 
+                        size="sm" 
+                        variant={inspectingUser?.isVerified ? "default" : "outline"}
+                        className="rounded-full h-8 text-[10px] font-bold"
+                        onClick={() => handleUpdateUserStatus(inspectingUserId!, 'isVerified', !inspectingUser?.isVerified)}
+                      >
+                        {inspectingUser?.isVerified ? "Revoke" : "Verify"}
+                      </Button>
                     </div>
-                  ))}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Admin Rights</span>
+                      <Button 
+                        size="sm" 
+                        variant={inspectingUser?.isAdmin ? "destructive" : "outline"}
+                        className="rounded-full h-8 text-[10px] font-bold"
+                        onClick={() => handleUpdateUserStatus(inspectingUserId!, 'isAdmin', !inspectingUser?.isAdmin)}
+                      >
+                        {inspectingUser?.isAdmin ? "Remove Admin" : "Grant Admin"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 p-6 bg-muted/20 rounded-3xl border border-border/50">
+                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                    <Award className="h-3 w-3" /> Badges
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['admin', 'premium', 'friendship'].map(bid => (
+                      <Badge 
+                        key={bid} 
+                        variant={inspectingUser?.badges?.includes(bid) ? "default" : "outline"}
+                        className="cursor-pointer uppercase text-[8px] h-6"
+                        onClick={() => handleBadgeToggle(inspectingUserId!, bid, !!inspectingUser?.badges?.includes(bid))}
+                      >
+                        {bid}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </section>
-              <section className="space-y-3">
-                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase flex items-center gap-2"><CreditCard className="h-3 w-3" /> Transaction Ledger</h3>
-                <div className="space-y-2">
+
+              <section className="space-y-4 p-6 bg-destructive/5 rounded-3xl border border-destructive/20">
+                <h3 className="text-[10px] font-headline font-bold text-destructive uppercase tracking-widest flex items-center gap-2">
+                  <ShieldAlert className="h-3 w-3" /> Discipline Registry
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <Button variant="outline" className="rounded-2xl h-12 text-[10px] font-bold uppercase" onClick={() => handleApplySanction(inspectingUserId!, 'warning', 'Manual Policy Warning')}>Issue Warning</Button>
+                  <Button variant="outline" className="rounded-2xl h-12 text-[10px] font-bold uppercase" onClick={() => handleApplySanction(inspectingUserId!, 'temp-1', '24 Hour Suspension')}>1 Day Ban</Button>
+                  <Button variant="outline" className="rounded-2xl h-12 text-[10px] font-bold uppercase" onClick={() => handleApplySanction(inspectingUserId!, 'temp-7', 'Policy Violation Suspension')}>7 Day Ban</Button>
+                  <Button variant="destructive" className="rounded-2xl h-12 text-[10px] font-bold uppercase" onClick={() => handleApplySanction(inspectingUserId!, 'perm', 'Permanent Account Closure')}>Permanent Ban</Button>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                  <CreditCard className="h-3 w-3" /> Financial History
+                </h3>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                   {inspectionTransactions?.map((t: any) => (
-                    <div key={t.id} className="p-3 bg-muted/30 rounded-xl flex justify-between items-center text-xs">
+                    <div key={t.id} className="p-3 bg-muted/10 rounded-xl flex justify-between items-center text-xs border border-border/30">
                       <div className="flex items-center gap-2"><Coins className="h-3 w-3 text-primary" /><span className="font-bold uppercase">{t.type}</span></div>
                       <p className="font-bold">{t.amount} COINS</p>
                     </div>
                   ))}
+                  {(!inspectionTransactions || inspectionTransactions.length === 0) && (
+                    <p className="text-[10px] text-muted-foreground italic text-center py-4">No transactions recorded.</p>
+                  )}
                 </div>
               </section>
-              <div className="grid grid-cols-2 gap-3 pt-6 border-t">
-                <Button variant="outline" onClick={() => handleApplySanction(inspectingUserId!, 'warning', 'Manual intervention')}>Issue Warning</Button>
-                <Button variant="destructive" onClick={() => handleApplySanction(inspectingUserId!, 'perm', 'Admin discretion')}>Terminal Ban</Button>
-              </div>
             </div>
           </DialogContent>
         </Dialog>

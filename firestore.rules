@@ -1,17 +1,13 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
     function isAdmin() {
       return isSignedIn() && 
-        (
-          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) ||
-          (existsGroup(/databases/$(database)/documents/users, "uid", request.auth.uid) && getGroup(/databases/$(database)/documents/users, "uid", request.auth.uid)[0].data.isAdmin == true)
-        );
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // Helper to check if a user is the owner regardless of whether ID is UID or SequentialID
     function isOwner(userId) {
       return isSignedIn() && (
         request.auth.uid == userId || 
@@ -30,15 +26,15 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow list: if isSignedIn();
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && (request.auth.uid == resource.data.uid || isOwner(resource.data.user1) || isOwner(resource.data.user2));
-      allow delete: if isSignedIn() && (isOwner(resource.data.user1) || isOwner(resource.data.user2));
+      allow update: if isSignedIn() && (request.auth.uid == resource.data.uid || isOwner(resource.data.user1) || isOwner(resource.data.user2) || isAdmin());
+      allow delete: if isSignedIn() && (isOwner(resource.data.user1) || isOwner(resource.data.user2) || isAdmin());
     }
 
     match /follows/{followId} {
       allow read: if isSignedIn();
       allow list: if isSignedIn();
       allow create: if isSignedIn();
-      allow delete: if isSignedIn() && isOwner(resource.data.followerId);
+      allow delete: if isSignedIn() && (isOwner(resource.data.followerId) || isAdmin());
     }
 
     match /verificationRequests/{requestId} {

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -6,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Lock, User, Loader2, Smartphone } from "lucide-react"
+import { Lock, User, Loader2 } from "lucide-react"
 import { useAuth, useFirestore } from "@/firebase"
 import { signInWithEmailAndPassword } from "firebase/auth"
 import { collection, query, where, getDocs, limit } from "firebase/firestore"
@@ -28,12 +27,9 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       let finalEmail = ""
-      
-      // Simple regex to check if it's a phone number (just digits or starts with +)
       const isPhone = /^\+?[0-9\s\-]{7,}$/.test(identifier)
 
       if (isPhone) {
-        // Search for user by phone number
         const usersRef = collection(db, "users")
         const q = query(usersRef, where("phoneNumber", "==", identifier), limit(1))
         const querySnapshot = await getDocs(q)
@@ -43,10 +39,9 @@ export default function LoginPage() {
         }
         
         const userData = querySnapshot.docs[0].data()
-        finalEmail = `${userData.username.toLowerCase()}@terminal.io`
+        finalEmail = `${userData.username.toLowerCase()}@portal.io`
       } else {
-        // Assume username
-        finalEmail = `${identifier.toLowerCase()}@terminal.io`
+        finalEmail = `${identifier.toLowerCase()}@portal.io`
       }
 
       await signInWithEmailAndPassword(auth, finalEmail, password)
@@ -57,7 +52,7 @@ export default function LoginPage() {
         title: "Login failed",
         description: error.message === "No account found with that phone number." 
           ? error.message 
-          : "Invalid username, phone number, or password.",
+          : "Invalid credentials. Please verify your identity.",
       })
       setIsLoading(false)
     }
@@ -67,9 +62,10 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-[440px] space-y-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-headline font-bold tracking-tighter">
-            Login
+          <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase">
+            Portal Access
           </h1>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Dashboard Entry Protocol</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -78,7 +74,7 @@ export default function LoginPage() {
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Username or Phone" 
-                className="pl-10" 
+                className="pl-10 h-12 rounded-xl" 
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required
@@ -91,7 +87,7 @@ export default function LoginPage() {
               <Input 
                 type="password" 
                 placeholder="Password" 
-                className="pl-10" 
+                className="pl-10 h-12 rounded-xl" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -100,15 +96,15 @@ export default function LoginPage() {
           </div>
           <Button 
             type="submit"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-headline font-bold transition-fluid"
+            className="w-full h-14 rounded-2xl text-lg font-headline font-bold uppercase transition-all shadow-lg shadow-primary/20"
             disabled={isLoading}
           >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Login"}
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify Identity"}
           </Button>
         </form>
 
         <div className="flex flex-col items-center gap-4">
-          <p className="text-center text-muted-foreground">
+          <p className="text-center text-sm font-medium text-muted-foreground">
             Don't have an account?{" "}
             <Link href="/signup" className="text-primary font-bold hover:underline">
               Sign Up!

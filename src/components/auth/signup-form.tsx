@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -62,7 +61,7 @@ export function SignupForm() {
   async function onSubmit(data: SignupFormValues) {
     setIsLoading(true)
     try {
-      const email = `${data.username.toLowerCase()}@terminal.io`
+      const email = `${data.username.toLowerCase()}@portal.io`
       const userCredential = await createUserWithEmailAndPassword(auth, email, data.password)
       const user = userCredential.user
 
@@ -76,10 +75,9 @@ export function SignupForm() {
       })
 
       const isAdmin = sequentialId === 1
-      const userDocId = sequentialId.toString()
       
       const userData = {
-        id: userDocId,
+        id: sequentialId.toString(),
         uid: user.uid,
         username: data.username,
         description: "",
@@ -95,28 +93,8 @@ export function SignupForm() {
         createdAt: new Date().toISOString(),
       }
 
-      await setDoc(doc(db, "users", userDocId), userData)
-
-      // Auto-Friend & Auto-Follow ID 2 (Welcome Bot)
-      if (sequentialId !== 2) {
-        const botQuery = query(collection(db, "users"), where("sequentialId", "==", 2), limit(1))
-        const botSnap = await getDocs(botQuery)
-        if (!botSnap.empty) {
-          const botId = botSnap.docs[0].id
-          // Auto Friend
-          addDoc(collection(db, "friendships"), {
-            user1: userDocId < botId ? userDocId : botId,
-            user2: userDocId < botId ? botId : userDocId,
-            status: 'accepted',
-            requestSentBy: botId,
-            createdAt: new Date().toISOString()
-          })
-          // Bot follows User
-          addDoc(collection(db, "follows"), { followerId: botId, followingId: userDocId, createdAt: new Date().toISOString() })
-          // User follows Bot
-          addDoc(collection(db, "follows"), { followerId: userDocId, followingId: botId, createdAt: new Date().toISOString() })
-        }
-      }
+      // Use UID as document ID for easier security rules
+      await setDoc(doc(db, "users", user.uid), userData)
 
       router.push("/home")
     } catch (error: any) {
