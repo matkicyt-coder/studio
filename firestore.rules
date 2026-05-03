@@ -13,8 +13,6 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Allow users to read their own profile, or admins to read any profile.
-      // Also allow public-ish read if the user is the system administrator (User #1) for messaging identification.
       allow read: if isSignedIn() && (
         request.auth.uid == userId || 
         isAdmin() || 
@@ -29,22 +27,15 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      // Split read into get and list for better query validation performance.
-      allow get: if isSignedIn() && (
-        resource.data.receiverId == request.auth.uid || 
-        resource.data.senderId == request.auth.uid || 
-        isAdmin()
-      );
-      
-      allow list: if isSignedIn() && (
+      // Simplified read rule to handle queries better
+      allow read: if isSignedIn() && (
         isAdmin() || 
         resource.data.receiverId == request.auth.uid || 
         resource.data.senderId == request.auth.uid
       );
       
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && (resource.data.receiverId == request.auth.uid || isAdmin());
-      allow delete: if isSignedIn() && (resource.data.receiverId == request.auth.uid || isAdmin());
+      allow update, delete: if isSignedIn() && (resource.data.receiverId == request.auth.uid || isAdmin());
     }
   }
 }

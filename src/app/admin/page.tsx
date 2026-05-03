@@ -24,7 +24,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -46,16 +45,15 @@ export default function AdminPage() {
   const [newSequentialId, setNewSequentialId] = useState("")
   const [coinAdjustment, setCoinAdjustment] = useState("")
 
-  // Fetch current user to verify admin status
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
     return doc(db, "users", user.uid)
   }, [db, user?.uid])
-  const { data: userData } = useDoc(userDocRef)
+  const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef)
 
-  // Fetch all users - CRITICAL: only if the user is confirmed as admin to avoid permission errors
   const usersQuery = useMemoFirebase(() => {
-    if (!db || !userData?.isAdmin) return null
+    // Only attempt to list ALL users if we have confirmed admin status to avoid permission errors
+    if (!db || !userData || userData.isAdmin !== true) return null
     return query(collection(db, "users"), orderBy("sequentialId", "asc"))
   }, [db, userData?.isAdmin])
   const { data: allUsers, isLoading: isUsersLoading } = useCollection(usersQuery)
@@ -66,14 +64,13 @@ export default function AdminPage() {
     }
   }, [user, isUserLoading, router])
 
-  // Security check: only admins can see this
   useEffect(() => {
-    if (userData && !userData.isAdmin) {
+    if (userData && userData.isAdmin === false) {
       router.push("/home")
     }
   }, [userData, router])
 
-  if (isUserLoading || !userData || (userData.isAdmin && isUsersLoading)) {
+  if (isUserLoading || isUserDataLoading || (userData?.isAdmin === true && isUsersLoading)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -81,7 +78,7 @@ export default function AdminPage() {
     )
   }
 
-  if (!userData.isAdmin) {
+  if (!userData?.isAdmin) {
     return null
   }
 
@@ -180,23 +177,21 @@ export default function AdminPage() {
               <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
-          <h1 className="text-4xl font-headline font-bold tracking-tighter">
+          <h1 className="text-4xl font-headline font-bold">
             Admin Management
           </h1>
         </div>
 
-        {/* Search Bar */}
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
-            placeholder="Search by username or sequential ID..."
+            placeholder="Search by username or ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-card border-border h-14 pl-12 text-lg focus:ring-primary/20"
+            className="bg-card border-border h-14 pl-12 text-lg"
           />
         </div>
 
-        {/* User List */}
         <div className="space-y-4">
           {filteredUsers?.map((userItem) => (
             <div 
@@ -209,18 +204,14 @@ export default function AdminPage() {
                     {userItem.username}
                     {userItem.isAdmin && <ShieldCheck className="h-4 w-4 text-primary" />}
                   </span>
-                  <span className="text-muted-foreground text-sm font-headline tracking-widest">
+                  <span className="text-muted-foreground text-sm font-headline">
                     ID: #{userItem.sequentialId} | Coins: {userItem.coins ?? 0}
                   </span>
                 </div>
               </div>
 
               <Dialog open={editingUserId === userItem.id} onOpenChange={(open) => {
-                if (!open) {
-                  setEditingUserId(null)
-                  setNewSequentialId("")
-                  setCoinAdjustment("")
-                }
+                if (!open) setEditingUserId(null)
               }}>
                 <DialogTrigger asChild>
                   <Button 
@@ -230,97 +221,75 @@ export default function AdminPage() {
                     }}
                     variant="ghost" 
                     size="icon" 
-                    className="text-muted-foreground hover:text-foreground hover:bg-accent"
+                    className="rounded-full"
                   >
                     <Settings2 className="h-5 w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-background border-border max-w-md">
+                <DialogContent className="bg-background border-border">
                   <DialogHeader>
                     <DialogTitle className="font-headline font-bold text-2xl">Manage User: {userItem.username}</DialogTitle>
-                    <DialogDescription className="text-muted-foreground">
+                    <DialogDescription>
                       Update permissions, system placement, and currency balance.
                     </DialogDescription>
                   </DialogHeader>
 
                   <div className="py-6 space-y-8">
-                    {/* Admin Toggle */}
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-muted-foreground tracking-widest uppercase">Admin Privileges</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">Admin Privileges</label>
                       <Button
                         onClick={() => handleUpdateAdminStatus(userItem)}
                         disabled={isUpdating}
                         variant={userItem.isAdmin ? "destructive" : "default"}
-                        className="w-full h-12 font-headline font-bold gap-2"
+                        className="w-full h-12 font-bold"
                       >
-                        {userItem.isAdmin ? (
-                          <>
-                            <ShieldX className="h-5 w-5" />
-                            Remove Admin Rights
-                          </>
-                        ) : (
-                          <>
-                            <ShieldCheck className="h-5 w-5" />
-                            Make Administrator
-                          </>
-                        )}
+                        {userItem.isAdmin ? "Remove Admin Rights" : "Make Administrator"}
                       </Button>
                     </div>
 
-                    {/* Sequential ID Change */}
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-muted-foreground tracking-widest uppercase">Sequential ID Position</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">ID Position</label>
                       <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            type="number"
-                            placeholder="Position Number"
-                            value={newSequentialId}
-                            onChange={(e) => setNewSequentialId(e.target.value)}
-                            className="bg-background border-border pl-10 h-12"
-                          />
-                        </div>
+                        <Input
+                          type="number"
+                          value={newSequentialId}
+                          onChange={(e) => setNewSequentialId(e.target.value)}
+                          className="h-12"
+                        />
                         <Button
                           onClick={() => handleUpdateSequentialId(userItem)}
-                          disabled={isUpdating || !newSequentialId || newSequentialId === userItem.sequentialId.toString()}
-                          className="bg-primary text-primary-foreground hover:bg-primary/90 font-headline font-bold h-12 px-6"
+                          disabled={isUpdating || !newSequentialId}
+                          className="h-12 px-6"
                         >
                           Update
                         </Button>
                       </div>
                     </div>
 
-                    {/* Coin Management */}
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-muted-foreground tracking-widest uppercase">Coin Management</label>
-                      <div className="space-y-3">
-                        <div className="relative">
-                          <Coins className="absolute left-3 top-3 h-4 w-4 text-yellow-500" />
-                          <Input
-                            type="number"
-                            placeholder="Amount to add/remove"
-                            value={coinAdjustment}
-                            onChange={(e) => setCoinAdjustment(e.target.value)}
-                            className="bg-background border-border pl-10 h-12"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <Button
-                            onClick={() => handleAdjustCoins(userItem, 'add')}
-                            disabled={isUpdating || !coinAdjustment}
-                            className="h-12 bg-green-600 hover:bg-green-700 text-white font-headline font-bold gap-2"
-                          >
-                            <Plus className="h-4 w-4" /> Add
-                          </Button>
-                          <Button
-                            onClick={() => handleAdjustCoins(userItem, 'remove')}
-                            disabled={isUpdating || !coinAdjustment}
-                            className="h-12 bg-red-600 hover:bg-red-700 text-white font-headline font-bold gap-2"
-                          >
-                            <Minus className="h-4 w-4" /> Remove
-                          </Button>
-                        </div>
+                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">Coin Management</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          type="number"
+                          placeholder="Amount"
+                          value={coinAdjustment}
+                          onChange={(e) => setCoinAdjustment(e.target.value)}
+                          className="col-span-2 h-12"
+                        />
+                        <Button
+                          onClick={() => handleAdjustCoins(userItem, 'add')}
+                          disabled={isUpdating || !coinAdjustment}
+                          className="h-12 bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Plus className="h-4 w-4 mr-2" /> Add
+                        </Button>
+                        <Button
+                          onClick={() => handleAdjustCoins(userItem, 'remove')}
+                          disabled={isUpdating || !coinAdjustment}
+                          className="h-12 bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          <Minus className="h-4 w-4 mr-2" /> Remove
+                        </Button>
                       </div>
                     </div>
                   </div>

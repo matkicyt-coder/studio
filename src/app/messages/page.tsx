@@ -1,8 +1,9 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useUser, useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { useUser, useFirestore, useCollection, useMemoFirebase, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
 import { collection, query, where, orderBy, doc } from "firebase/firestore"
 import { Mail, MailOpen, Loader2, ArrowLeft, Trash2 } from "lucide-react"
@@ -64,7 +65,6 @@ export default function MessagesPage() {
       <NavigationBar />
       
       <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Message List */}
         <div className="md:col-span-1 space-y-4">
           <div className="flex items-center gap-4 mb-6">
             <Link href="/home">
@@ -72,10 +72,10 @@ export default function MessagesPage() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-            <h1 className="text-3xl font-headline font-bold tracking-tight">Messages</h1>
+            <h1 className="text-3xl font-headline font-bold">Messages</h1>
           </div>
 
-          <div className="space-y-2 overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
+          <div className="space-y-2 overflow-y-auto max-h-[70vh] pr-2">
             {messages?.length === 0 && (
               <div className="text-center py-10 text-muted-foreground font-headline">
                 No messages yet.
@@ -85,12 +85,12 @@ export default function MessagesPage() {
               <div
                 key={msg.id}
                 onClick={() => handleReadMessage(msg)}
-                className={`p-4 rounded-xl border transition-all cursor-pointer group ${
+                className={`p-4 rounded-xl border transition-all cursor-pointer ${
                   selectedMessage?.id === msg.id 
                     ? "bg-primary/10 border-primary" 
                     : msg.isRead 
-                    ? "bg-card border-border hover:border-primary/50" 
-                    : "bg-card border-primary/40 shadow-sm hover:border-primary"
+                    ? "bg-card border-border" 
+                    : "bg-card border-primary/40 shadow-sm"
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -113,7 +113,6 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        {/* Message Content */}
         <div className="md:col-span-2">
           {selectedMessage ? (
             <div className="bg-card border border-border rounded-2xl p-8 space-y-6 animate-fade-in h-full flex flex-col">
@@ -123,7 +122,7 @@ export default function MessagesPage() {
                     {selectedMessage.subject}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    From: <span className="text-foreground font-medium">Administrator</span>
+                    From: Administrator
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Received: {selectedMessage.timestamp ? format(new Date(selectedMessage.timestamp), "MMMM do yyyy, h:mm a") : ""}
@@ -145,17 +144,11 @@ export default function MessagesPage() {
               <div className="flex-1 text-lg leading-relaxed whitespace-pre-wrap font-body">
                 {selectedMessage.content}
               </div>
-
-              <div className="pt-6 border-t border-border mt-auto">
-                <p className="text-xs text-muted-foreground italic">
-                  This is a system message. Replies are disabled at this time.
-                </p>
-              </div>
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground bg-card/50 border border-dashed border-border rounded-2xl p-12">
               <Mail className="h-12 w-12 mb-4 opacity-20" />
-              <p className="font-headline font-medium">Select a message to read</p>
+              <p className="font-headline">Select a message to read</p>
             </div>
           )}
         </div>
