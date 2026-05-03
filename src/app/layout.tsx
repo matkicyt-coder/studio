@@ -3,8 +3,8 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'Blauberia - Digital Innovation',
-  description: 'Where imagination meets digital innovation.',
+  title: 'Digital Portal',
+  description: 'Access your personal digital terminal.',
 };
 
 export default function RootLayout({
