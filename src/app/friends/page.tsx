@@ -3,12 +3,13 @@
 
 import { useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore"
-import { User, MoreVertical, Star, Trash2, ArrowLeft, Loader2, UserPlus, UserX, Check, X } from "lucide-react"
+import { User, MoreVertical, Star, Trash2, ArrowLeft, Loader2, UserPlus, UserX, Check, X, Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NavigationBar } from "@/components/navigation-bar"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { PremiumBadge } from "@/components/premium-badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,12 @@ export default function FriendsPage() {
   const db = useFirestore()
   const router = useRouter()
   const { toast } = useToast()
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return doc(db, "users", user.uid)
+  }, [db, user?.uid])
+  const { data: userData } = useDoc(userDocRef)
 
   const friendshipsQuery1 = useMemoFirebase(() => {
     if (!db || isUserLoading || !user?.uid) return null
@@ -83,20 +90,28 @@ export default function FriendsPage() {
   }
 
   const handleToggleBestFriend = async (targetId: string) => {
-    if (!db || !user?.uid) return
+    if (!db || !user?.uid || !userData) return
     const friendship = acceptedFriendships.find(f => f.user1 === targetId || f.user2 === targetId)
     if (!friendship) return
 
     const isBest = friendship.bestFriendOf?.includes(user.uid)
     const bestFriendsCount = acceptedFriendships.filter(f => f.bestFriendOf?.includes(user.uid)).length
+    
+    const limit = userData.isPremium ? 10 : 5
 
-    if (!isBest && bestFriendsCount >= 10) {
-      toast({ variant: "destructive", title: "LIMIT REACHED", description: "YOU CAN ONLY HAVE 10 BEST FRIENDS." })
+    if (!isBest && bestFriendsCount >= limit) {
+      toast({ 
+        variant: "destructive", 
+        title: "LIMIT REACHED", 
+        description: userData.isPremium 
+          ? "YOU HAVE REACHED THE PREMIUM LIMIT OF 10 BEST FRIENDS." 
+          : "YOU CAN ONLY HAVE 5 BEST FRIENDS. UPGRADE TO PREMIUM FOR 10!" 
+      })
       return
     }
 
     const fRef = doc(db, "friendships", friendship.id)
-    await updateDoc(fRef, {
+    updateDoc(fRef, {
       bestFriendOf: isBest ? arrayRemove(user.uid) : arrayUnion(user.uid)
     })
   }
@@ -105,7 +120,7 @@ export default function FriendsPage() {
     if (!db) return
     const friendship = allFriendships.find(f => f.user1 === targetId || f.user2 === targetId)
     if (friendship) {
-      await deleteDoc(doc(db, "friendships", friendship.id))
+      deleteDoc(doc(db, "friendships", friendship.id))
       toast({ title: "FRIEND REMOVED" })
     }
   }
@@ -114,7 +129,7 @@ export default function FriendsPage() {
     if (!db) return
     const friendship = pendingIncoming.find(f => f.user1 === targetId || f.user2 === targetId)
     if (friendship) {
-      await updateDoc(doc(db, "friendships", friendship.id), {
+      updateDoc(doc(db, "friendships", friendship.id), {
         status: 'accepted',
         createdAt: new Date().toISOString()
       })
@@ -148,9 +163,12 @@ export default function FriendsPage() {
           </Button>
           <div className="flex flex-col">
             <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter uppercase">Connections</h1>
-            <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">
-              Friends: {friendsData?.length || 0} / 20
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">
+                Friends: {friendsData?.length || 0} / 20
+              </p>
+              {userData?.isPremium && <PremiumBadge className="h-3 w-3" />}
+            </div>
           </div>
         </div>
 
@@ -191,6 +209,7 @@ export default function FriendsPage() {
                       <div className="flex flex-col min-w-0 flex-1">
                         <div className="flex items-center gap-1 min-w-0">
                           <span className="font-bold text-base truncate">{friend.username}</span>
+                          {friend.isPremium && <PremiumBadge className="h-3 w-3 shrink-0" />}
                           {friend.isVerified && <VerifiedBadge className="h-3.5 w-3.5 shrink-0" />}
                         </div>
                         <span className="text-[8px] font-headline text-muted-foreground uppercase tracking-widest">#{friend.sequentialId}</span>
@@ -243,7 +262,10 @@ export default function FriendsPage() {
                       <UserPlus className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-bold text-sm truncate">{pendingUser.username}</span>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="font-bold text-sm truncate">{pendingUser.username}</span>
+                        {pendingUser.isPremium && <PremiumBadge className="h-2.5 w-2.5 shrink-0" />}
+                      </div>
                       <Button 
                         variant="link" 
                         onClick={() => router.push(`/profile/${pendingUser.sequentialId}`)}

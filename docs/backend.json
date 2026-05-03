@@ -44,6 +44,10 @@
           "type": "boolean",
           "description": "True if the user has a verification checkmark."
         },
+        "isPremium": {
+          "type": "boolean",
+          "description": "True if the user has premium status."
+        },
         "pastUsernames": {
           "type": "array",
           "items": { "type": "string" },
@@ -92,9 +96,10 @@
           "description": "UID of the user who initiated the request." 
         },
         "bestFriendOf": { 
-          "type": "array", 
-          "items": { "type": "string" },
-          "description": "UIDs of the users who have marked this person as a best friend."
+          "array": { 
+            "items": { "type": "string" },
+            "description": "UIDs of the users who have marked this person as a best friend."
+          }
         },
         "createdAt": { "type": "string", "format": "date-time" }
       },

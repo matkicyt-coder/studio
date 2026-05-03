@@ -30,7 +30,8 @@ import {
   Eraser,
   Mail,
   Check,
-  CheckCircle2
+  CheckCircle2,
+  Crown
 } from "lucide-react"
 import {
   Dialog,
@@ -54,6 +55,7 @@ import { FirestorePermissionError } from "@/firebase/errors"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { PremiumBadge } from "@/components/premium-badge"
 
 const PREDEFINED_REASONS = [
   "Exploiting & Cheating",
@@ -164,6 +166,29 @@ export default function AdminPage() {
         toast({
           title: "Verification updated",
           description: `${targetUser.username} is now ${updateData.isVerified ? "verified" : "unverified"}.`,
+        })
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: targetRef.path,
+          operation: "update",
+          requestResourceData: updateData,
+        }))
+      })
+      .finally(() => setIsUpdating(false))
+  }
+
+  const handleUpdatePremiumStatus = async (targetUser: any) => {
+    if (!db) return
+    setIsUpdating(true)
+    const targetRef = doc(db, "users", targetUser.id)
+    const updateData = { isPremium: !targetUser.isPremium }
+
+    updateDoc(targetRef, updateData)
+      .then(() => {
+        toast({
+          title: "Premium status updated",
+          description: `${targetUser.username} is now ${updateData.isPremium ? "Premium" : "Standard"}.`,
         })
       })
       .catch(async (error) => {
@@ -472,6 +497,7 @@ export default function AdminPage() {
                     <div className="flex flex-col min-w-0">
                       <span className="font-medium text-base sm:text-lg flex items-center gap-2 truncate">
                         {userItem.username}
+                        {userItem.isPremium && <PremiumBadge className="h-4 w-4 shrink-0" />}
                         {userItem.isVerified && <VerifiedBadge className="h-4 w-4 shrink-0" />}
                         {userItem.isAdmin && <ShieldCheck className="h-4 w-4 text-primary shrink-0" />}
                         {userItem.isBanned && <Badge variant="destructive" className="h-4 text-[8px] uppercase shrink-0">{userItem.banType}</Badge>}
@@ -503,6 +529,7 @@ export default function AdminPage() {
                         <div className="flex items-center justify-between pr-8">
                           <DialogTitle className="font-headline font-bold text-xl sm:text-2xl uppercase flex items-center gap-2 truncate">
                             {userItem.username}
+                            {userItem.isPremium && <PremiumBadge className="h-5 w-5 shrink-0" />}
                             {userItem.isVerified && <VerifiedBadge className="h-5 w-5 shrink-0" />}
                           </DialogTitle>
                           <Link href={`/profile/${userItem.sequentialId}`} target="_blank">
@@ -516,16 +543,27 @@ export default function AdminPage() {
 
                       <div className="px-6 py-4 space-y-8 overflow-y-auto grow scrollbar-thin">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Verification Status</label>
-                          <Button
-                            onClick={() => handleUpdateVerificationStatus(userItem)}
-                            disabled={isUpdating}
-                            variant={userItem.isVerified ? "outline" : "default"}
-                            className="w-full h-12 font-bold font-headline uppercase text-xs gap-2"
-                          >
-                            {userItem.isVerified ? <VerifiedBadge className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-                            {userItem.isVerified ? "Unverify User" : "Verify User"}
-                          </Button>
+                          <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Special Status</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              onClick={() => handleUpdateVerificationStatus(userItem)}
+                              disabled={isUpdating}
+                              variant={userItem.isVerified ? "outline" : "default"}
+                              className="h-12 font-bold font-headline uppercase text-[10px] gap-2"
+                            >
+                              {userItem.isVerified ? <VerifiedBadge className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                              {userItem.isVerified ? "Unverify" : "Verify"}
+                            </Button>
+                            <Button
+                              onClick={() => handleUpdatePremiumStatus(userItem)}
+                              disabled={isUpdating}
+                              variant={userItem.isPremium ? "outline" : "default"}
+                              className="h-12 font-bold font-headline uppercase text-[10px] gap-2 border-amber-500/50"
+                            >
+                              {userItem.isPremium ? <PremiumBadge className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
+                              {userItem.isPremium ? "Demote" : "Premium"}
+                            </Button>
+                          </div>
                         </div>
 
                         <div className="space-y-2">

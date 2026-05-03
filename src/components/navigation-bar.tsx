@@ -4,12 +4,13 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Settings, Coins, Home, Search, ShieldCheck, User, LogOut, Lock } from "lucide-react"
+import { Settings, Coins, Home, Search, ShieldCheck, User, LogOut, Crown } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
 import { doc, updateDoc, increment, collection, query, limit } from "firebase/firestore"
 import { signOut } from "firebase/auth"
 import { formatCurrency, cn, calculateAge } from "@/lib/utils"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { PremiumBadge } from "@/components/premium-badge"
 import {
   Dialog,
   DialogContent,
@@ -158,14 +159,17 @@ export function NavigationBar() {
                       >
                         <div className="flex items-center gap-2 overflow-hidden">
                           <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className={cn(
-                            "font-medium text-sm flex items-center gap-1.5 truncate",
-                            isPermBanned && "text-muted-foreground italic line-through"
-                          )}>
-                            {isPermBanned ? "CONTENT DELETED" : u.username}
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className={cn(
+                              "font-medium text-sm flex items-center gap-1.5 truncate",
+                              isPermBanned && "text-muted-foreground italic line-through"
+                            )}>
+                              {isPermBanned ? "CONTENT DELETED" : u.username}
+                            </span>
+                            {!isPermBanned && u.isPremium && <PremiumBadge className="h-3 w-3 shrink-0" />}
                             {!isPermBanned && u.isVerified && <VerifiedBadge className="h-3.5 w-3.5 shrink-0" />}
                             {!isPermBanned && u.isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />}
-                          </span>
+                          </div>
                         </div>
                         <span className="text-[10px] font-headline text-muted-foreground shrink-0 ml-2">#{u.sequentialId}</span>
                       </button>
@@ -180,10 +184,11 @@ export function NavigationBar() {
             <DialogTrigger asChild>
               <button 
                 className={cn(
-                  "flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-card border border-border transition-all font-bold shadow-sm shrink-0 hover:bg-accent"
+                  "flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-card border border-border transition-all font-bold shadow-sm shrink-0 hover:bg-accent",
+                  userData?.isPremium && "border-amber-500/50"
                 )}
               >
-                <Coins className="h-4 w-4 text-primary" />
+                <Coins className={cn("h-4 w-4", userData?.isPremium ? "text-amber-500" : "text-primary")} />
                 <span className="font-headline text-xs sm:text-sm">{formatCurrency(coinBalance)}</span>
               </button>
             </DialogTrigger>
@@ -197,6 +202,19 @@ export function NavigationBar() {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-3 py-4">
+                <Button 
+                  onClick={() => {
+                    router.push("/premium")
+                    const closeBtn = document.querySelector('[data-radix-collection-item]') as HTMLElement
+                    closeBtn?.click()
+                  }}
+                  variant="outline"
+                  className="w-full h-14 border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 font-headline font-bold uppercase tracking-tighter gap-2"
+                >
+                  <Crown className="h-5 w-5" />
+                  Become Premium
+                </Button>
+
                 {[
                   { amount: 100, label: "100" },
                   { amount: 500, label: "500" },
@@ -234,6 +252,13 @@ export function NavigationBar() {
               >
                 <Settings className="h-4 w-4" />
                 <span className="font-headline font-bold text-[10px] uppercase tracking-widest">Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => router.push("/premium")}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-accent transition-colors text-amber-600"
+              >
+                <Crown className="h-4 w-4" />
+                <span className="font-headline font-bold text-[10px] uppercase tracking-widest">Premium</span>
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={handleLogout}

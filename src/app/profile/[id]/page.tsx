@@ -21,9 +21,11 @@ import {
   UserMinus,
   Star,
   UserCheck,
-  UserX
+  UserX,
+  Crown
 } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { PremiumBadge } from "@/components/premium-badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -187,7 +189,7 @@ export default function ProfilePage() {
         toast({ variant: "destructive", title: "LIMIT REACHED", description: "YOU CAN ONLY HAVE 20 FRIENDS." })
         return
       }
-      await addDoc(collection(db, "friendships"), {
+      addDoc(collection(db, "friendships"), {
         user1: user.uid < profileUser.id ? user.uid : profileUser.id,
         user2: user.uid < profileUser.id ? profileUser.id : user.uid,
         status: 'pending',
@@ -198,7 +200,7 @@ export default function ProfilePage() {
       toast({ title: "REQUEST SENT" })
     } else if (action === 'accept') {
       if (friendship) {
-        await updateDoc(doc(db, "friendships", friendship.id), {
+        updateDoc(doc(db, "friendships", friendship.id), {
           status: 'accepted',
           createdAt: new Date().toISOString()
         })
@@ -206,7 +208,7 @@ export default function ProfilePage() {
       }
     } else if (action === 'remove' || action === 'decline' || action === 'cancel') {
       if (friendship) {
-        await deleteDoc(doc(db, "friendships", friendship.id))
+        deleteDoc(doc(db, "friendships", friendship.id))
         toast({ title: action === 'remove' ? "FRIEND REMOVED" : "REQUEST CLEARED" })
       }
     }
@@ -329,11 +331,14 @@ export default function ProfilePage() {
             </div>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter uppercase flex items-center gap-2 truncate">
-                  {profileUser.username}
+                <div className="flex items-center gap-2 truncate">
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter uppercase flex items-center gap-2 truncate">
+                    {profileUser.username}
+                  </h1>
+                  {profileUser.isPremium && <PremiumBadge className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />}
                   {profileUser.isVerified && <VerifiedBadge className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />}
-                </h1>
-                {profileUser.isAdmin && <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />}
+                  {profileUser.isAdmin && <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />}
+                </div>
               </div>
             </div>
           </div>
