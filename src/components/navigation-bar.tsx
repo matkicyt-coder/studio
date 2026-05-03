@@ -34,7 +34,9 @@ export function NavigationBar() {
 
   // Unread messages count - strictly wait for userData to avoid permission race conditions
   const messagesQuery = useMemoFirebase(() => {
+    // We only initiate the query if we have the user record and we know their permissions
     if (!db || !user?.uid || !userData) return null
+    
     return query(
       collection(db, "messages"),
       where("receiverId", "==", user.uid),

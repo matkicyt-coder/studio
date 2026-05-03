@@ -6,17 +6,28 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Optimized isAdmin check for performance in list rules
     function isAdmin() {
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userPath) && get(userPath).data.isAdmin == true;
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn() && (
+      // Users can see themselves, admins can see everyone, 
+      // and User #1 is always visible (as the system sender)
+      allow get: if isSignedIn() && (
         request.auth.uid == userId || 
         isAdmin() || 
         resource.data.sequentialId == 1
       );
+      
+      // Explicit list rule to allow admins to see all users
+      // or standard users to find the admin by sequentialId
+      allow list: if isSignedIn() && (
+        isAdmin() ||
+        (request.query.limit <= 10 && resource.data.sequentialId == 1)
+      );
+      
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
@@ -26,9 +37,15 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      // Allow list and get operations for participants and admins
-      allow read: if isSignedIn() && (
-        isAdmin() || 
+      // Explicitly split read into get and list for the firestore query optimizer
+      allow get: if isSignedIn() && (
+        resource.data.receiverId == request.auth.uid || 
+        resource.data.senderId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      allow list: if isSignedIn() && (
+        isAdmin() ||
         resource.data.receiverId == request.auth.uid || 
         resource.data.senderId == request.auth.uid
       );
