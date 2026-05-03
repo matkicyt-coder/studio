@@ -1,11 +1,10 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { useUser, useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { collection, query, where, orderBy, doc, updateDoc, writeBatch } from "firebase/firestore"
+import { collection, query, where, orderBy, doc } from "firebase/firestore"
 import { Mail, MailOpen, Loader2, ArrowLeft, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -34,21 +33,19 @@ export default function MessagesPage() {
     }
   }, [user, isUserLoading, router])
 
-  const handleReadMessage = async (message: any) => {
+  const handleReadMessage = (message: any) => {
     setSelectedMessage(message)
     if (!message.isRead && db) {
       const messageRef = doc(db, "messages", message.id)
-      updateDoc(messageRef, { isRead: true })
+      updateDocumentNonBlocking(messageRef, { isRead: true })
     }
   }
 
-  const handleDeleteMessage = async (messageId: string) => {
+  const handleDeleteMessage = (messageId: string) => {
     if (!db) return
     const messageRef = doc(db, "messages", messageId)
-    // Actually delete in this simple implementation
-    import('firebase/firestore').then(({ deleteDoc }) => {
-      deleteDoc(messageRef)
-    })
+    deleteDocumentNonBlocking(messageRef)
+    
     if (selectedMessage?.id === messageId) {
       setSelectedMessage(null)
     }
@@ -136,7 +133,10 @@ export default function MessagesPage() {
                   variant="ghost" 
                   size="icon" 
                   className="text-muted-foreground hover:text-destructive"
-                  onClick={() => handleDeleteMessage(selectedMessage.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteMessage(selectedMessage.id);
+                  }}
                 >
                   <Trash2 className="h-5 w-5" />
                 </Button>
