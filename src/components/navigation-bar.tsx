@@ -118,27 +118,33 @@ export function NavigationBar() {
             {isSearchOpen && filteredUsers && filteredUsers.length > 0 && (
               <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-2xl shadow-xl overflow-hidden animate-fade-in z-50">
                 <div className="py-2">
-                  {filteredUsers.map((u) => (
-                    <button
-                      key={u.id}
-                      onClick={() => {
-                        router.push(`/profile/${u.sequentialId}`)
-                        setIsSearchOpen(false)
-                        setSearchQuery("")
-                      }}
-                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-sm flex items-center gap-1.5">
-                          {u.username}
-                          {u.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-primary fill-primary/10" />}
-                          {u.isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-headline text-muted-foreground">#{u.sequentialId}</span>
-                    </button>
-                  ))}
+                  {filteredUsers.map((u) => {
+                    const isPermBanned = u.isBanned && u.banType === 'perm'
+                    return (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          router.push(`/profile/${u.sequentialId}`)
+                          setIsSearchOpen(false)
+                          setSearchQuery("")
+                        }}
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className={cn(
+                            "font-medium text-sm flex items-center gap-1.5",
+                            isPermBanned && "text-muted-foreground italic line-through"
+                          )}>
+                            {isPermBanned ? "CONTENT DELETED" : u.username}
+                            {!isPermBanned && u.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-primary fill-primary/10" />}
+                            {!isPermBanned && u.isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-headline text-muted-foreground">#{u.sequentialId}</span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}

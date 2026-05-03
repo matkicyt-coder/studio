@@ -16,7 +16,8 @@ import {
   Pencil,
   Check,
   X,
-  CheckCircle2
+  CheckCircle2,
+  ShieldAlert
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -162,6 +163,26 @@ export default function ProfilePage() {
         <div className="max-w-xl mx-auto text-center space-y-6">
           <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto" />
           <h1 className="text-3xl font-headline font-bold uppercase">User Not Found</h1>
+          <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
+            <ArrowLeft className="h-4 w-4" /> Back Home
+          </Button>
+        </div>
+      </main>
+    )
+  }
+
+  // Handle Perm Banned Users
+  const isPermBanned = profileUser.isBanned && profileUser.banType === 'perm'
+  if (isPermBanned) {
+    return (
+      <main className="min-h-screen bg-background w-full pt-24 px-6">
+        <NavigationBar />
+        <div className="max-w-xl mx-auto text-center space-y-6 animate-fade-in">
+          <ShieldAlert className="h-16 w-16 text-destructive mx-auto" />
+          <h1 className="text-3xl font-headline font-bold uppercase tracking-tighter">Account Terminated</h1>
+          <p className="text-muted-foreground font-body">
+            This profile is no longer available due to a permanent violation of the Terms of Service.
+          </p>
           <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
             <ArrowLeft className="h-4 w-4" /> Back Home
           </Button>
