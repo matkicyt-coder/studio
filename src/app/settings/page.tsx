@@ -8,7 +8,7 @@ import { doc, updateDoc, increment } from "firebase/firestore"
 import { updatePassword, signOut } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, LogOut, Loader2, Lock, User, ShieldAlert } from "lucide-react"
+import { Pencil, LogOut, Loader2, Lock, User, ShieldAlert, Sun, Moon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import Link from "next/link"
@@ -35,6 +36,7 @@ export default function SettingsPage() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false)
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+  const [theme, setTheme] = useState<"light" | "dark">("light")
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
@@ -42,6 +44,20 @@ export default function SettingsPage() {
   }, [db, user?.uid])
 
   const { data: userData } = useDoc(userDocRef)
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null
+    const initialTheme = savedTheme || "light"
+    setTheme(initialTheme)
+    document.documentElement.classList.toggle("dark", initialTheme === "dark")
+  }, [])
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light"
+    setTheme(newTheme)
+    localStorage.setItem("theme", newTheme)
+    document.documentElement.classList.toggle("dark", newTheme === "dark")
+  }
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -227,6 +243,21 @@ export default function SettingsPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </div>
+
+          {/* Theme Switch Section */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="space-y-1">
+              <p className="text-xs font-headline font-bold text-muted-foreground tracking-widest">Visual Mode</p>
+              <div className="flex items-center gap-2">
+                {theme === "light" ? <Sun className="h-5 w-5 text-primary" /> : <Moon className="h-5 w-5 text-primary" />}
+                <span className="text-sm font-medium">{theme === "light" ? "White Mode" : "Black Mode"}</span>
+              </div>
+            </div>
+            <Switch 
+              checked={theme === "dark"} 
+              onCheckedChange={toggleTheme}
+            />
           </div>
 
           {/* Admin Panel Button */}

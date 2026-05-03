@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Settings, Coins, Home, Sun, Moon } from "lucide-react"
+import { Settings, Coins, Home } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { formatCurrency } from "@/lib/utils"
@@ -21,21 +21,6 @@ export function NavigationBar() {
   const { user } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
-  const [theme, setTheme] = useState<"light" | "dark">("light")
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null
-    const initialTheme = savedTheme || "light"
-    setTheme(initialTheme)
-    document.documentElement.classList.toggle("dark", initialTheme === "dark")
-  }, [])
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light"
-    setTheme(newTheme)
-    localStorage.setItem("theme", newTheme)
-    document.documentElement.classList.toggle("dark", newTheme === "dark")
-  }
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
@@ -66,17 +51,8 @@ export function NavigationBar() {
           <Home className="h-6 w-6" />
         </Link>
 
-        {/* Right Side: Theme, Coins and Settings */}
+        {/* Right Side: Coins and Settings */}
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="rounded-full hover:bg-accent"
-          >
-            {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-          </Button>
-
           <Dialog>
             <DialogTrigger asChild>
               <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 transition-colors font-headline font-bold">
