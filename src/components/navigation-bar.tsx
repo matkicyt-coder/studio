@@ -50,7 +50,7 @@ export function NavigationBar() {
   const { data: userData } = useDoc(userDocRef)
 
   const age = useMemo(() => calculateAge(userData?.dateOfBirth), [userData?.dateOfBirth])
-  const isParentalMode = age < 18
+  const isParentalMode = age > 0 && age < 18
 
   // Memoize users for search
   const usersRef = useMemoFirebase(() => {
@@ -226,6 +226,14 @@ export function NavigationBar() {
                   <div className="pt-2">
                     <Button 
                       onClick={() => {
+                        if (isParentalMode) {
+                          toast({
+                            variant: "destructive",
+                            title: "Action Restricted",
+                            description: "Accounts under 18 cannot process upgrades.",
+                          })
+                          return
+                        }
                         router.push("/premium")
                         const closeBtn = document.querySelector('[data-radix-collection-item]') as HTMLElement
                         closeBtn?.click()
@@ -263,7 +271,7 @@ export function NavigationBar() {
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-accent transition-colors text-amber-600"
                 >
                   <Crown className="h-4 w-4" />
-                  <span className="font-headline font-bold text-[10px] uppercase tracking-widest">Premium</span>
+                  <span className="font-headline font-bold text-[10px] uppercase tracking-widest">Premium Dashboard</span>
                 </DropdownMenuItem>
               )}
 

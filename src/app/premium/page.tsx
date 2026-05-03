@@ -1,18 +1,18 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
 import { doc, updateDoc, increment, arrayUnion } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { PremiumBadge } from "@/components/premium-badge"
-import { Check, Crown, Star, Coins, Loader2, ArrowLeft, Award, Sparkles, ShieldCheck } from "lucide-react"
+import { Check, Crown, Star, Coins, Loader2, ArrowLeft, Award, Sparkles, ShieldAlert } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, calculateAge } from "@/lib/utils"
 
 export default function PremiumPage() {
   const { user, isUserLoading } = useUser()
@@ -28,6 +28,9 @@ export default function PremiumPage() {
 
   const { data: userData } = useDoc(userDocRef)
 
+  const age = useMemo(() => calculateAge(userData?.dateOfBirth), [userData?.dateOfBirth])
+  const isParentalMode = age > 0 && age < 18
+
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push("/login")
@@ -37,11 +40,20 @@ export default function PremiumPage() {
   const handleBuyPremium = async (isFree: boolean = false) => {
     if (!userDocRef || !userData) return
 
+    if (isParentalMode) {
+      toast({
+        variant: "destructive",
+        title: "Action Restricted",
+        description: "Accounts under 18 are not permitted to process upgrades.",
+      })
+      return
+    }
+
     if (!isFree && (userData.coins ?? 0) < 20000) {
       toast({
         variant: "destructive",
-        title: "Insufficient Coins",
-        description: "You need 20,000 coins to upgrade to Premium.",
+        title: "Need more coins",
+        description: "You need 20,000 coins to get your membership.",
       })
       return
     }
@@ -56,8 +68,8 @@ export default function PremiumPage() {
     updateDoc(userDocRef, updateData)
       .then(() => {
         toast({
-          title: "Success!",
-          description: "Welcome to the Premium Club! You've earned your badge.",
+          title: "Welcome aboard!",
+          description: "You are now a member! Check your new badge.",
         })
       })
       .catch(async (error) => {
@@ -163,6 +175,15 @@ export default function PremiumPage() {
           </h1>
         </div>
 
+        {isParentalMode && (
+          <div className="bg-primary/10 border-2 border-primary/20 p-6 rounded-[30px] flex items-center gap-4 animate-fade-in">
+            <ShieldAlert className="h-8 w-8 text-primary shrink-0" />
+            <p className="text-sm font-headline font-bold text-primary uppercase tracking-tight">
+              Parental Mode is active. Purchases and upgrades are restricted for your account.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-8 bg-white dark:bg-[#111] border-4 border-[#ddd] dark:border-[#222] p-8 rounded-[40px] shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-5">
@@ -192,8 +213,8 @@ export default function PremiumPage() {
           <div className="flex flex-col justify-center gap-6">
             <Button 
               onClick={() => handleBuyPremium(false)}
-              disabled={isUpdating}
-              className="h-24 bg-primary text-white text-3xl font-headline font-bold uppercase tracking-tighter rounded-[30px] shadow-[0_8px_0_0_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_10px_0_0_rgba(14,165,233,0.3)] active:translate-y-[4px] active:shadow-none transition-all"
+              disabled={isUpdating || isParentalMode}
+              className="h-24 bg-primary text-white text-3xl font-headline font-bold uppercase tracking-tighter rounded-[30px] shadow-[0_8px_0_0_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_10px_0_0_rgba(14,165,233,0.3)] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-[0_8px_0_0_rgba(14,165,233,0.3)]"
             >
               {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Coins className="mr-3 h-8 w-8" />}
               20K Coins
@@ -201,9 +222,9 @@ export default function PremiumPage() {
             
             <Button 
               onClick={() => handleBuyPremium(true)}
-              disabled={isUpdating}
+              disabled={isUpdating || isParentalMode}
               variant="outline"
-              className="h-16 bg-white dark:bg-[#111] border-4 border-[#ddd] dark:border-[#222] font-headline font-bold uppercase text-xs tracking-widest rounded-[24px] hover:bg-accent"
+              className="h-16 bg-white dark:bg-[#111] border-4 border-[#ddd] dark:border-[#222] font-headline font-bold uppercase text-xs tracking-widest rounded-[24px] hover:bg-accent disabled:opacity-50"
             >
               Get it Free
             </Button>
