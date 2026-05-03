@@ -25,7 +25,8 @@ import {
   Crown,
   Users,
   MoreVertical,
-  Wifi
+  Wifi,
+  Calendar
 } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { PremiumBadge } from "@/components/premium-badge"
@@ -204,6 +205,9 @@ export default function ProfilePage() {
   if (!profileUser) return <div>User not found</div>
 
   const isOwnProfile = user?.uid === profileUser.id
+  const formattedJoinDate = profileUser.createdAt 
+    ? new Date(profileUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : "Unknown"
 
   return (
     <main className="min-h-screen bg-background w-full pt-24 pb-20 px-4">
@@ -323,6 +327,16 @@ export default function ProfilePage() {
                   </Link>
                 )
               })}
+              {!profileUser.badges?.length && (
+                <p className="text-[10px] italic text-muted-foreground">No achievements yet.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-8 border-t border-border/50">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span className="text-[10px] font-headline font-bold uppercase tracking-widest">Member Since {formattedJoinDate}</span>
             </div>
           </div>
         </div>
