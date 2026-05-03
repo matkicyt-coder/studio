@@ -170,10 +170,14 @@ export default function SettingsPage() {
       setNewPassword("")
       setIsPasswordDialogOpen(false)
     } catch (error: any) {
+      const message = error.code === 'auth/requires-recent-login' 
+        ? "Security check failed. Please log out and back in to change your password." 
+        : (error.message || "Update failed.");
+      
       toast({
         variant: "destructive",
-        title: "Update failed",
-        description: error.message || "Please re-login to change your password.",
+        title: "Security Error",
+        description: message,
       })
     } finally {
       setIsUpdating(false)
@@ -197,10 +201,14 @@ export default function SettingsPage() {
         description: `A verification code has been sent to ${newPhone}.`,
       })
     } catch (error: any) {
+      const message = error.code === 'auth/requires-recent-login' 
+        ? "Security check failed. Please log out and back in to link your phone." 
+        : (error.message || "Failed to send code.");
+
       toast({
         variant: "destructive",
-        title: "Failed to send code",
-        description: error.message,
+        title: "Security Error",
+        description: message,
       })
     } finally {
       setIsUpdating(false)
@@ -238,7 +246,6 @@ export default function SettingsPage() {
     setIsUpdating(true)
     
     try {
-      // Modern method that sends a link to the NEW email
       await verifyBeforeUpdateEmail(user, newEmail)
       
       toast({
@@ -247,12 +254,17 @@ export default function SettingsPage() {
       })
       setIsEmailDialogOpen(false)
     } catch (error: any) {
-      // Handle the specific "operation-not-allowed" error with clear instructions
       if (error.code === 'auth/operation-not-allowed') {
         toast({
           variant: "destructive",
           title: "Console Setup Required",
           description: "Please enable 'Email address change' in your Firebase Console (Authentication > Settings > User actions).",
+        })
+      } else if (error.code === 'auth/requires-recent-login') {
+        toast({
+          variant: "destructive",
+          title: "Security Error",
+          description: "Security check failed. Please log out and back in to update your email.",
         })
       } else {
         toast({
