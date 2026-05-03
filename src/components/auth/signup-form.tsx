@@ -31,7 +31,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth, useFirestore } from "@/firebase"
 import { createUserWithEmailAndPassword } from "firebase/auth"
-import { doc, setDoc, runTransaction, collection, query, where, getDocs, addDoc } from "firebase/firestore"
+import { doc, setDoc, runTransaction } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 
 const signupSchema = z.object({
@@ -98,37 +98,6 @@ export function SignupForm() {
 
       const userDocRef = doc(db, "users", user.uid)
       await setDoc(userDocRef, userData)
-
-      // Send welcome message if not user #1
-      if (sequentialId > 1) {
-        // Find Admin (User #1) - This query is allowed by rules for sequentialId == 1
-        const adminQuery = query(collection(db, "users"), where("sequentialId", "==", 1))
-        const adminSnapshot = await getDocs(adminQuery)
-        
-        if (!adminSnapshot.empty) {
-          const adminId = adminSnapshot.docs[0].id
-          
-          await addDoc(collection(db, "messages"), {
-            senderId: adminId,
-            receiverId: user.uid,
-            subject: "Welcome to the Digital Terminal",
-            content: `Welcome, ${data.username}! 
-
-You have successfully accessed the Digital Terminal. As a new user, here is some basic advice:
-
-1. Security: Keep your password safe. You can change it anytime in the settings.
-2. Economy: You can collect coins from the shop to unlock premium features like username changes.
-3. Community: Your sequential ID (#${sequentialId}) marks your position in our growing system.
-
-Explore the interface and make yourself at home. 
-
-Best regards,
-System Administrator`,
-            timestamp: new Date().toISOString(),
-            isRead: false
-          })
-        }
-      }
 
       router.push("/home")
     } catch (error: any) {
