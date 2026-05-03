@@ -1,20 +1,17 @@
 
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useRef } from "react"
 import Link from "next/link"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Settings, Coins, Home, Search, User, LogOut, Crown, Plus, ShoppingBag } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
 import { doc, updateDoc, increment, collection, query, limit, addDoc } from "firebase/firestore"
 import { signOut } from "firebase/auth"
-import { formatCurrency, cn } from "@/lib/utils"
-import { VerifiedBadge } from "@/components/verified-badge"
-import { PremiumBadge } from "@/components/premium-badge"
+import { formatCurrency } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -34,7 +31,6 @@ export function NavigationBar() {
   const db = useFirestore()
   const auth = useAuth()
   const router = useRouter()
-  const pathname = usePathname()
   const { toast } = useToast()
   
   const [searchQuery, setSearchQuery] = useState("")
@@ -120,7 +116,7 @@ export function NavigationBar() {
                   ))}
                   <div className="pt-4 border-t mt-4">
                     <Button onClick={() => { setIsShopOpen(false); router.push("/premium"); }} className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-bold uppercase tracking-tighter rounded-2xl">
-                      <Crown className="h-5 w-5 mr-2" /> {userData?.isPremium ? "Premium Active" : "Become Premium"}
+                      <Crown className="h-5 w-5 mr-2" /> {userData?.isPremium ? (userData.premiumType === 'lifetime' ? "Lifetime Active" : "Manage Premium") : "Become Premium"}
                     </Button>
                   </div>
                 </div>

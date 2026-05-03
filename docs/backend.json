@@ -19,6 +19,10 @@
         "isAdmin": { "type": "boolean" },
         "isVerified": { "type": "boolean" },
         "isPremium": { "type": "boolean" },
+        "premiumType": { "type": "string", "enum": ["none", "monthly", "lifetime"] },
+        "premiumStatus": { "type": "string", "enum": ["none", "active", "cancelled"] },
+        "premiumExpiry": { "type": "string", "format": "date-time" },
+        "lastPremiumGrant": { "type": "string", "format": "date-time" },
         "badges": { "type": "array", "items": { "type": "string" } },
         "pastUsernames": { "type": "array", "items": { "type": "string" } },
         "moderationHistory": {
@@ -84,7 +88,7 @@
       "properties": {
         "userId": { "type": "string" },
         "amount": { "type": "number" },
-        "type": { "type": "string", "enum": ["coin_purchase", "premium_purchase", "username_change"] },
+        "type": { "type": "string", "enum": ["coin_purchase", "premium_purchase", "username_change", "premium_grant"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "amount", "type", "createdAt"]

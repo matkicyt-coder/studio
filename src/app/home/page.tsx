@@ -5,7 +5,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { doc, updateDoc, arrayUnion } from "firebase/firestore"
+import { doc, updateDoc, arrayUnion, increment, collection, addDoc } from "firebase/firestore"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { PremiumBadge } from "@/components/premium-badge"
 import { FriendCircles } from "@/components/friends/friend-circles"
@@ -39,6 +39,50 @@ export default function HomePage() {
     }, 60000)
     return () => clearInterval(interval)
   }, [db, user?.uid])
+
+  // Monthly Premium Grant Logic
+  useEffect(() => {
+    if (!db || !user?.uid || !userData || !userDocRef) return
+    
+    // Only for active monthly subscribers
+    if (userData.premiumType === 'monthly' && userData.premiumStatus === 'active') {
+      const now = new Date()
+      const lastGrant = userData.lastPremiumGrant ? new Date(userData.lastPremiumGrant) : null
+      
+      // Check if premium has expired
+      if (userData.premiumExpiry) {
+        const expiryDate = new Date(userData.premiumExpiry)
+        if (now > expiryDate) {
+          updateDoc(userDocRef, {
+            isPremium: false,
+            premiumStatus: 'none',
+            premiumType: 'none'
+          })
+          return
+        }
+      }
+
+      // Grant monthly 10k coins if 30 days have passed since last grant
+      if (lastGrant) {
+        const diffInDays = (now.getTime() - lastGrant.getTime()) / (1000 * 3600 * 24)
+        if (diffInDays >= 30) {
+          updateDoc(userDocRef, {
+            coins: increment(10000),
+            lastPremiumGrant: now.toISOString(),
+            // Auto-renew expiry if active
+            premiumExpiry: new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)).toISOString()
+          }).then(() => {
+            addDoc(collection(db, "transactions"), {
+              userId: user.uid,
+              amount: 10000,
+              type: "premium_grant",
+              createdAt: now.toISOString()
+            })
+          })
+        }
+      }
+    }
+  }, [db, user?.uid, userData, userDocRef])
 
   // Sync missing badges based on status
   useEffect(() => {
