@@ -89,7 +89,7 @@ export function NavigationBar() {
   const coinBalance = userData?.coins ?? 0
 
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border/50 bg-background/80 backdrop-blur-md z-50 px-6 flex items-center shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border/50 bg-[#f4f4f5] dark:bg-black z-50 px-6 flex items-center shadow-sm">
       <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
         <Link 
           href="/home" 
