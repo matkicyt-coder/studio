@@ -29,7 +29,8 @@ import {
   Ban,
   Eraser,
   Mail,
-  Check
+  Check,
+  CheckCircle2
 } from "lucide-react"
 import {
   Dialog,
