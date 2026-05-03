@@ -24,7 +24,8 @@ import {
   ShieldAlert,
   CheckCircle2,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  ExternalLink
 } from "lucide-react"
 import {
   Dialog,
@@ -268,11 +269,11 @@ export default function AdminPage() {
 
         <Tabs defaultValue="users" className="space-y-6">
           <TabsList className="bg-card border border-border h-12 p-1 rounded-full grid grid-cols-2 max-w-md">
-            <TabsTrigger value="users" className="rounded-full font-headline font-bold">Users</TabsTrigger>
-            <TabsTrigger value="reports" className="rounded-full font-headline font-bold flex items-center gap-2">
+            <TabsTrigger value="users" className="rounded-full font-headline font-bold uppercase text-[10px] tracking-widest">Users</TabsTrigger>
+            <TabsTrigger value="reports" className="rounded-full font-headline font-bold flex items-center gap-2 uppercase text-[10px] tracking-widest">
               Reports
               {allReports && allReports.length > 0 && (
-                <span className="bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full text-[10px]">
+                <span className="bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full text-[8px]">
                   {allReports.length}
                 </span>
               )}
@@ -302,7 +303,7 @@ export default function AdminPage() {
                         {userItem.username}
                         {userItem.isAdmin && <ShieldCheck className="h-4 w-4 text-primary" />}
                       </span>
-                      <span className="text-muted-foreground text-sm font-headline">
+                      <span className="text-muted-foreground text-[10px] font-headline uppercase tracking-widest">
                         ID: #{userItem.sequentialId} | Coins: {userItem.coins ?? 0}
                       </span>
                     </div>
@@ -326,25 +327,32 @@ export default function AdminPage() {
                     </DialogTrigger>
                     <DialogContent className="bg-background border-border sm:max-w-[425px]">
                       <DialogHeader>
-                        <DialogTitle className="font-headline font-bold text-2xl">{userItem.username}</DialogTitle>
+                        <div className="flex items-center justify-between pr-8">
+                          <DialogTitle className="font-headline font-bold text-2xl">{userItem.username}</DialogTitle>
+                          <Link href={`/profile/${userItem.sequentialId}`} target="_blank">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
                         <DialogDescription>Manage user privileges and account details.</DialogDescription>
                       </DialogHeader>
 
                       <div className="py-6 space-y-8">
                         <div className="space-y-2">
-                          <label className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-wider">Permissions</label>
+                          <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Permissions</label>
                           <Button
                             onClick={() => handleUpdateAdminStatus(userItem)}
                             disabled={isUpdating}
                             variant={userItem.isAdmin ? "destructive" : "default"}
-                            className="w-full h-12 font-bold font-headline"
+                            className="w-full h-12 font-bold font-headline uppercase text-xs"
                           >
                             {userItem.isAdmin ? "Remove Admin Privileges" : "Grant Admin Privileges"}
                           </Button>
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-wider">System Position</label>
+                          <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">System Position</label>
                           <div className="flex gap-2">
                             <Input
                               type="number"
@@ -355,7 +363,7 @@ export default function AdminPage() {
                             <Button
                               onClick={() => handleUpdateSequentialId(userItem)}
                               disabled={isUpdating || !newSequentialId}
-                              className="h-12 px-6 font-headline font-bold"
+                              className="h-12 px-6 font-headline font-bold uppercase text-xs"
                             >
                               Update
                             </Button>
@@ -363,7 +371,7 @@ export default function AdminPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-wider">Currency Control</label>
+                          <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Currency Control</label>
                           <div className="grid grid-cols-2 gap-3">
                             <Input
                               type="number"
@@ -375,14 +383,14 @@ export default function AdminPage() {
                             <Button
                               onClick={() => handleAdjustCoins(userItem, 'add')}
                               disabled={isUpdating || !coinAdjustment}
-                              className="h-12 bg-primary text-primary-foreground font-bold font-headline"
+                              className="h-12 bg-primary text-primary-foreground font-bold font-headline uppercase text-xs"
                             >
                               <Plus className="h-4 w-4 mr-2" /> Add
                             </Button>
                             <Button
                               onClick={() => handleAdjustCoins(userItem, 'remove')}
                               disabled={isUpdating || !coinAdjustment}
-                              className="h-12 bg-destructive text-destructive-foreground font-bold font-headline"
+                              className="h-12 bg-destructive text-destructive-foreground font-bold font-headline uppercase text-xs"
                             >
                               <Minus className="h-4 w-4 mr-2" /> Remove
                             </Button>
@@ -395,7 +403,7 @@ export default function AdminPage() {
               ))}
               
               {filteredUsers?.length === 0 && (
-                <div className="text-center py-20 text-muted-foreground font-headline text-lg italic">
+                <div className="text-center py-20 text-muted-foreground font-headline text-[10px] uppercase tracking-[0.2em] italic">
                   No users found matching your search.
                 </div>
               )}
@@ -408,9 +416,9 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Flag className="h-5 w-5 text-destructive" />
-                    <span className="font-headline font-bold text-lg">Report against {report.targetUsername}</span>
+                    <span className="font-headline font-bold text-lg">Report: {report.targetUsername}</span>
                     {report.status && report.status !== 'pending' && (
-                      <Badge variant="outline" className="uppercase text-[10px] tracking-widest font-bold">
+                      <Badge variant="outline" className="uppercase text-[8px] tracking-[0.2em] font-bold h-5">
                         {report.status}
                       </Badge>
                     )}
@@ -419,7 +427,7 @@ export default function AdminPage() {
                     {report.claimedById ? (
                       <Button 
                         onClick={() => setInspectingReportId(report.id)}
-                        className="bg-primary hover:bg-primary/90 font-headline font-bold text-xs px-4 rounded-full"
+                        className="bg-primary hover:bg-primary/90 font-headline font-bold text-[10px] uppercase h-8 px-4 rounded-full"
                       >
                         Inspect
                       </Button>
@@ -427,7 +435,7 @@ export default function AdminPage() {
                       <Button 
                         onClick={() => handleClaimReport(report)}
                         variant="outline"
-                        className="font-headline font-bold text-xs px-4 rounded-full"
+                        className="font-headline font-bold text-[10px] uppercase h-8 px-4 rounded-full"
                       >
                         Claim
                       </Button>
@@ -443,20 +451,25 @@ export default function AdminPage() {
                   </div>
                 </div>
                 
-                <p className="bg-muted/30 p-4 rounded-xl text-sm italic border border-border/50 line-clamp-2">
-                  "{report.reason}"
-                </p>
+                <div className="flex gap-4">
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Category: {report.category || "General"}</p>
+                    <p className="bg-muted/30 p-4 rounded-xl text-sm italic border border-border/50 line-clamp-2">
+                      "{report.reason}"
+                    </p>
+                  </div>
+                </div>
 
                 <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-headline uppercase tracking-widest">
                     <div className="flex items-center gap-1">
                       <UserIcon className="h-3 w-3" />
-                      By {report.reporterUsername}
+                      {report.reporterUsername}
                     </div>
                     {report.claimedByUsername && (
                       <div className="flex items-center gap-1 text-primary">
                         <ShieldCheck className="h-3 w-3" />
-                        Claimed by {report.claimedByUsername}
+                        {report.claimedByUsername}
                       </div>
                     )}
                     <div className="flex items-center gap-1">
@@ -479,13 +492,24 @@ export default function AdminPage() {
                         Inspect Report
                       </DialogTitle>
                       <DialogDescription>
-                        Case management for report against {activeReport.targetUsername}.
+                        Moderation terminal for report against {activeReport.targetUsername}.
                       </DialogDescription>
                     </DialogHeader>
 
                     <div className="py-6 space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Target Object</h4>
+                          <Badge variant="secondary" className="uppercase text-[8px] tracking-[0.2em]">{activeReport.reportTarget || "Unknown"}</Badge>
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Category</h4>
+                          <Badge variant="secondary" className="uppercase text-[8px] tracking-[0.2em]">{activeReport.category || "Other"}</Badge>
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
-                        <h4 className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Reason</h4>
+                        <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Reason</h4>
                         <p className="bg-muted/30 p-4 rounded-xl text-sm italic border border-border/50">
                           "{activeReport.reason}"
                         </p>
@@ -498,7 +522,7 @@ export default function AdminPage() {
                             <p className="font-medium">{activeReport.targetUsername}</p>
                             {targetProfile && (
                               <Link href={`/profile/${targetProfile.sequentialId}`}>
-                                <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary">View Profile</Button>
+                                <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary uppercase font-bold tracking-widest">View Profile</Button>
                               </Link>
                             )}
                           </div>
@@ -509,7 +533,7 @@ export default function AdminPage() {
                             <p className="font-medium">{activeReport.reporterUsername}</p>
                             {reporterProfile && (
                               <Link href={`/profile/${reporterProfile.sequentialId}`}>
-                                <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary">View Profile</Button>
+                                <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary uppercase font-bold tracking-widest">View Profile</Button>
                               </Link>
                             )}
                           </div>
@@ -517,12 +541,12 @@ export default function AdminPage() {
                       </div>
 
                       <div className="space-y-4 pt-4 border-t border-border/50">
-                        <h4 className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Set Status</h4>
+                        <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Set Status</h4>
                         <div className="grid grid-cols-3 gap-2">
                           <Button 
                             variant={activeReport.status === 'solved' ? "default" : "outline"}
                             size="sm"
-                            className="font-headline text-[10px] font-bold uppercase gap-1"
+                            className="font-headline text-[8px] font-bold uppercase tracking-widest gap-1"
                             onClick={() => handleUpdateReportStatus(activeReport.id, 'solved')}
                           >
                             <CheckCircle2 className="h-3 w-3" /> Solved
@@ -530,7 +554,7 @@ export default function AdminPage() {
                           <Button 
                             variant={activeReport.status === 'unsolved' ? "default" : "outline"}
                             size="sm"
-                            className="font-headline text-[10px] font-bold uppercase gap-1"
+                            className="font-headline text-[8px] font-bold uppercase tracking-widest gap-1"
                             onClick={() => handleUpdateReportStatus(activeReport.id, 'unsolved')}
                           >
                             <XCircle className="h-3 w-3" /> Unsolved
@@ -538,7 +562,7 @@ export default function AdminPage() {
                           <Button 
                             variant={activeReport.status === 'troll' ? "default" : "outline"}
                             size="sm"
-                            className="font-headline text-[10px] font-bold uppercase gap-1"
+                            className="font-headline text-[8px] font-bold uppercase tracking-widest gap-1"
                             onClick={() => handleUpdateReportStatus(activeReport.id, 'troll')}
                           >
                             <AlertTriangle className="h-3 w-3" /> Troll
@@ -547,22 +571,22 @@ export default function AdminPage() {
                       </div>
 
                       <div className="space-y-4 pt-4 border-t border-border/50">
-                        <h4 className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Moderation Actions</h4>
+                        <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Moderation Actions</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-xs font-bold uppercase">
+                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-[8px] font-bold uppercase tracking-widest">
                             Warn
                           </Button>
-                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-xs font-bold uppercase">
+                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-[8px] font-bold uppercase tracking-widest">
                             Perm Ban
                           </Button>
-                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-xs font-bold uppercase">
+                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-[8px] font-bold uppercase tracking-widest">
                             Temp Ban (1D)
                           </Button>
-                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-xs font-bold uppercase">
+                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-[8px] font-bold uppercase tracking-widest">
                             Temp Ban (7D)
                           </Button>
                         </div>
-                        <p className="text-[10px] text-muted-foreground italic text-center">Moderation actions are currently in development.</p>
+                        <p className="text-[10px] text-muted-foreground italic text-center font-headline uppercase tracking-tighter opacity-50">Moderation actions are currently in development.</p>
                       </div>
                     </div>
 
@@ -570,7 +594,7 @@ export default function AdminPage() {
                       <Button 
                         onClick={() => handleUnclaimReport(activeReport.id)}
                         variant="secondary"
-                        className="w-full font-headline font-bold uppercase text-xs"
+                        className="w-full font-headline font-bold uppercase text-[10px] tracking-widest"
                       >
                         Unclaim Report
                       </Button>
@@ -583,7 +607,7 @@ export default function AdminPage() {
             {allReports?.length === 0 && (
               <div className="text-center py-24 space-y-4 bg-muted/10 rounded-3xl border border-dashed border-border">
                 <ShieldCheck className="h-12 w-12 text-muted-foreground mx-auto opacity-20" />
-                <p className="text-muted-foreground font-headline italic">The terminal is quiet. No reports to review.</p>
+                <p className="text-muted-foreground font-headline text-[10px] uppercase tracking-[0.2em] italic">The terminal is quiet. No reports to review.</p>
               </div>
             )}
           </TabsContent>

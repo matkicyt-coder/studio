@@ -15,6 +15,10 @@
           "type": "string",
           "description": "Chosen username."
         },
+        "description": {
+          "type": "string",
+          "description": "User's self-written bio."
+        },
         "dateOfBirth": {
           "type": "string",
           "description": "User's date of birth.",
@@ -63,6 +67,16 @@
         "reporterUsername": { "type": "string" },
         "targetUserId": { "type": "string" },
         "targetUsername": { "type": "string" },
+        "reportTarget": { 
+          "type": "string", 
+          "enum": ["username", "description"],
+          "description": "What part of the profile is being reported."
+        },
+        "category": { 
+          "type": "string", 
+          "enum": ["sexual", "inappropriate", "other"],
+          "description": "The category of the violation."
+        },
         "reason": { "type": "string" },
         "status": { 
           "type": "string", 
@@ -73,7 +87,7 @@
         "claimedByUsername": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["reporterId", "targetUserId", "reason", "createdAt"]
+      "required": ["reporterId", "targetUserId", "reason", "createdAt", "reportTarget", "category"]
     },
     "Counter": {
       "title": "Counter",

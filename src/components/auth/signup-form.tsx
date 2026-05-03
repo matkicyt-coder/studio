@@ -87,6 +87,7 @@ export function SignupForm() {
       const userData = {
         id: user.uid,
         username: data.username,
+        description: "",
         dateOfBirth: data.dob,
         gender: data.gender,
         sequentialId: sequentialId,
