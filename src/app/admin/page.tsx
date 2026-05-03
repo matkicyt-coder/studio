@@ -12,11 +12,8 @@ import {
   Search, 
   Settings2, 
   ShieldCheck, 
-  ShieldX, 
-  Hash, 
   Loader2,
   ArrowLeft,
-  Coins,
   Plus,
   Minus
 } from "lucide-react"
@@ -52,7 +49,6 @@ export default function AdminPage() {
   const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef)
 
   const usersQuery = useMemoFirebase(() => {
-    // Only attempt to list ALL users if we have confirmed admin status to avoid permission errors
     if (!db || !userData || userData.isAdmin !== true) return null
     return query(collection(db, "users"), orderBy("sequentialId", "asc"))
   }, [db, userData?.isAdmin])
@@ -78,9 +74,7 @@ export default function AdminPage() {
     )
   }
 
-  if (!userData?.isAdmin) {
-    return null
-  }
+  if (!userData?.isAdmin) return null
 
   const filteredUsers = allUsers?.filter(u => 
     u.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -96,8 +90,8 @@ export default function AdminPage() {
     updateDoc(targetRef, updateData)
       .then(() => {
         toast({
-          title: "Admin status updated",
-          description: `${targetUser.username} is now ${updateData.isAdmin ? "an admin" : "not an admin"}.`,
+          title: "Admin Status Updated",
+          description: `${targetUser.username} is now ${updateData.isAdmin ? "an administrator" : "a standard user"}.`,
         })
       })
       .catch(async (error) => {
@@ -122,11 +116,10 @@ export default function AdminPage() {
     updateDoc(targetRef, updateData)
       .then(() => {
         toast({
-          title: "ID updated",
-          description: `User ${targetUser.username} ID set to ${numericId}.`,
+          title: "ID Updated",
+          description: `User ${targetUser.username} position set to #${numericId}.`,
         })
         setEditingUserId(null)
-        setNewSequentialId("")
       })
       .catch(async (error) => {
         errorEmitter.emit("permission-error", new FirestorePermissionError({
@@ -177,9 +170,7 @@ export default function AdminPage() {
               <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
-          <h1 className="text-4xl font-headline font-bold">
-            Admin Management
-          </h1>
+          <h1 className="text-4xl font-headline font-bold">Admin Management</h1>
         </div>
 
         <div className="relative group">
@@ -228,27 +219,25 @@ export default function AdminPage() {
                 </DialogTrigger>
                 <DialogContent className="bg-background border-border">
                   <DialogHeader>
-                    <DialogTitle className="font-headline font-bold text-2xl">Manage User: {userItem.username}</DialogTitle>
-                    <DialogDescription>
-                      Update permissions, system placement, and currency balance.
-                    </DialogDescription>
+                    <DialogTitle className="font-headline font-bold text-2xl">{userItem.username}</DialogTitle>
+                    <DialogDescription>Manage user privileges and account details.</DialogDescription>
                   </DialogHeader>
 
                   <div className="py-6 space-y-8">
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">Admin Privileges</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">Permissions</label>
                       <Button
                         onClick={() => handleUpdateAdminStatus(userItem)}
                         disabled={isUpdating}
                         variant={userItem.isAdmin ? "destructive" : "default"}
                         className="w-full h-12 font-bold"
                       >
-                        {userItem.isAdmin ? "Remove Admin Rights" : "Make Administrator"}
+                        {userItem.isAdmin ? "Remove Admin Privileges" : "Grant Admin Privileges"}
                       </Button>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">ID Position</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">System Position</label>
                       <div className="flex gap-2">
                         <Input
                           type="number"
@@ -267,7 +256,7 @@ export default function AdminPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">Coin Management</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">Currency Control</label>
                       <div className="grid grid-cols-2 gap-3">
                         <Input
                           type="number"
@@ -279,14 +268,14 @@ export default function AdminPage() {
                         <Button
                           onClick={() => handleAdjustCoins(userItem, 'add')}
                           disabled={isUpdating || !coinAdjustment}
-                          className="h-12 bg-green-600 hover:bg-green-700 text-white"
+                          className="h-12 bg-primary text-primary-foreground font-bold"
                         >
                           <Plus className="h-4 w-4 mr-2" /> Add
                         </Button>
                         <Button
                           onClick={() => handleAdjustCoins(userItem, 'remove')}
                           disabled={isUpdating || !coinAdjustment}
-                          className="h-12 bg-red-600 hover:bg-red-700 text-white"
+                          className="h-12 bg-destructive text-destructive-foreground font-bold"
                         >
                           <Minus className="h-4 w-4 mr-2" /> Remove
                         </Button>
@@ -300,7 +289,7 @@ export default function AdminPage() {
           
           {filteredUsers?.length === 0 && (
             <div className="text-center py-20 text-muted-foreground font-headline">
-              No matching users found.
+              No results found.
             </div>
           )}
         </div>

@@ -7,16 +7,15 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isSignedIn() && exists(userPath) && get(userPath).data.isAdmin == true;
     }
 
     match /users/{userId} {
       allow read: if isSignedIn() && (
         request.auth.uid == userId || 
         isAdmin() || 
-        resource.data.sequentialId == 1
+        (exists(resource) && resource.data.sequentialId == 1)
       );
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
@@ -27,7 +26,7 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      // Simplified read rule to handle queries better
+      // Combined read rule that handles both individual 'get' and filtered 'list' queries
       allow read: if isSignedIn() && (
         isAdmin() || 
         resource.data.receiverId == request.auth.uid || 
@@ -35,7 +34,10 @@ service cloud.firestore {
       );
       
       allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && (resource.data.receiverId == request.auth.uid || isAdmin());
+      allow update, delete: if isSignedIn() && (
+        isAdmin() || 
+        resource.data.receiverId == request.auth.uid
+      );
     }
   }
 }

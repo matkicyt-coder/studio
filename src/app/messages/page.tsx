@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useUser, useFirestore, useCollection, useMemoFirebase, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
+import { useUser, useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
 import { collection, query, where, orderBy, doc } from "firebase/firestore"
 import { Mail, MailOpen, Loader2, ArrowLeft, Trash2 } from "lucide-react"
@@ -17,14 +17,21 @@ export default function MessagesPage() {
   const router = useRouter()
   const [selectedMessage, setSelectedMessage] = useState<any>(null)
 
-  const messagesQuery = useMemoFirebase(() => {
+  const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
+    return doc(db, "users", user.uid)
+  }, [db, user?.uid])
+  const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef)
+
+  const messagesQuery = useMemoFirebase(() => {
+    // Only query if user is logged in and we have their record
+    if (!db || !user?.uid || !userData) return null
     return query(
       collection(db, "messages"),
       where("receiverId", "==", user.uid),
       orderBy("timestamp", "desc")
     )
-  }, [db, user?.uid])
+  }, [db, user?.uid, userData])
 
   const { data: messages, isLoading: isMessagesLoading } = useCollection(messagesQuery)
 
@@ -52,7 +59,7 @@ export default function MessagesPage() {
     }
   }
 
-  if (isUserLoading || isMessagesLoading) {
+  if (isUserLoading || isUserDataLoading || (userData && isMessagesLoading)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -122,7 +129,7 @@ export default function MessagesPage() {
                     {selectedMessage.subject}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    From: Administrator
+                    From: System Administrator
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Received: {selectedMessage.timestamp ? format(new Date(selectedMessage.timestamp), "MMMM do yyyy, h:mm a") : ""}

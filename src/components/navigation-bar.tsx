@@ -32,15 +32,15 @@ export function NavigationBar() {
 
   const { data: userData } = useDoc(userDocRef)
 
-  // Unread messages count - only query if user is authenticated
+  // Unread messages count - only query if user and their record are ready
   const messagesQuery = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
+    if (!db || !user?.uid || !userData) return null
     return query(
       collection(db, "messages"),
       where("receiverId", "==", user.uid),
       where("isRead", "==", false)
     )
-  }, [db, user?.uid])
+  }, [db, user?.uid, userData])
   const { data: unreadMessages } = useCollection(messagesQuery)
 
   const handleBuy = (amount: number) => {
@@ -94,7 +94,7 @@ export function NavigationBar() {
           <Dialog>
             <DialogTrigger asChild>
               <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background border border-border hover:bg-accent transition-colors font-bold shadow-sm">
-                <Coins className="h-4 w-4 text-yellow-500" />
+                <Coins className="h-4 w-4 text-primary" />
                 <span>{formatCurrency(coinBalance)}</span>
               </button>
             </DialogTrigger>
@@ -114,7 +114,7 @@ export function NavigationBar() {
                 ].map((tier) => (
                   <div key={tier.amount} className="flex items-center justify-between p-4 rounded-lg bg-accent/50 border border-border">
                     <div className="flex items-center gap-3">
-                      <Coins className="h-5 w-5 text-yellow-500" />
+                      <Coins className="h-5 w-5 text-primary" />
                       <span className="font-bold text-lg">{tier.label} Coins</span>
                     </div>
                     <Button 
