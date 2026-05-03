@@ -486,7 +486,10 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between group">
               <div className="space-y-1">
                 <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Phone number</p>
-                <h2 className="text-xl font-medium">{userData?.phoneNumber || "Not linked"}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-medium">{userData?.phoneNumber || "Not linked"}</h2>
+                  {userData?.phoneNumber && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                </div>
               </div>
               <Dialog open={isPhoneDialogOpen} onOpenChange={(open) => {
                 setIsPhoneDialogOpen(open)
