@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
@@ -123,7 +122,7 @@ export default function ProfilePage() {
       <NavigationBar />
       
       <div className="max-w-2xl mx-auto space-y-12 animate-fade-in">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <Button 
             onClick={() => router.back()} 
             variant="ghost" 
@@ -132,6 +131,35 @@ export default function ProfilePage() {
           >
             <ArrowLeft className="h-6 w-6" />
           </Button>
+        </div>
+
+        <div className="space-y-10 text-center">
+          <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto border-2 border-primary/20">
+            <User className="h-12 w-12 text-primary" />
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <h1 className="text-5xl font-headline font-bold tracking-tighter">
+                {profileUser.username}
+              </h1>
+              {profileUser.isAdmin && (
+                <div className="p-2 bg-primary/10 text-primary border border-primary/20 rounded-full" title="Administrator">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between p-8 rounded-3xl bg-card border border-border gap-6">
+          <div className="flex flex-col items-center sm:items-start gap-2">
+            <span className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Member Since</span>
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              <span className="text-xl font-medium">{joinDate}</span>
+            </div>
+          </div>
 
           <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
             <DialogTrigger asChild>
@@ -166,48 +194,6 @@ export default function ProfilePage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
-
-        <div className="space-y-10 text-center">
-          <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto border-2 border-primary/20">
-            <User className="h-12 w-12 text-primary" />
-          </div>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-center gap-3">
-              <h1 className="text-5xl font-headline font-bold tracking-tighter">
-                {profileUser.username}
-              </h1>
-              {profileUser.isAdmin && (
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full">
-                  <ShieldCheck className="h-4 w-4" />
-                  <span className="text-[10px] font-headline font-bold uppercase tracking-tighter">Admin</span>
-                </div>
-              )}
-            </div>
-            <p className="text-muted-foreground font-headline font-bold tracking-[0.2em] text-sm uppercase">
-              Terminal Resident #{profileUser.sequentialId}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-8 rounded-3xl bg-card border border-border flex flex-col items-center gap-2">
-            <span className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Member Since</span>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <span className="text-xl font-medium">{joinDate}</span>
-            </div>
-          </div>
-          <div className="p-8 rounded-3xl bg-card border border-border flex flex-col items-center gap-2">
-            <span className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Balance</span>
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-primary" />
-              </div>
-              <span className="text-xl font-medium">{profileUser.coins ?? 0} Coins</span>
-            </div>
-          </div>
         </div>
 
         <div className="pt-12 text-center">
