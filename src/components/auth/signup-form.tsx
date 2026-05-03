@@ -65,9 +65,7 @@ export function SignupForm() {
 
   async function onSubmit(data: SignupFormValues) {
     setIsLoading(true)
-    // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500))
-    console.log("Registered:", data)
     localStorage.setItem("blauberia_session", "true")
     router.push("/")
   }
@@ -150,7 +148,6 @@ export function SignupForm() {
             name="gender"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-medium text-foreground">Gender</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger className="transition-fluid bg-background">
