@@ -30,13 +30,6 @@ export default function SettingsPage() {
   }, [db, userDocId])
   const { data: userData } = useDoc(userDocRef)
 
-  const followersQuery = useMemoFirebase(() => {
-    if (!db || !userDocId) return null
-    return query(collection(db, "follows"), where("followingId", "==", userDocId))
-  }, [db, userDocId])
-  const { data: followers } = useCollection(followersQuery)
-  const followerCount = followers?.length || 0
-
   useEffect(() => {
     if (!isUserLoading && !user) router.push("/login")
   }, [user, isUserLoading, router])
@@ -59,27 +52,6 @@ export default function SettingsPage() {
     } finally {
       setIsUpdating(false)
     }
-  }
-
-  const handleVerificationRequest = async () => {
-    if (!db || !userDocId || !userData) return
-    if (followerCount < 10000) {
-      toast({ 
-        variant: "destructive", 
-        title: "INELIGIBLE", 
-        description: "YOU NEED AT LEAST 10,000 FOLLOWERS TO REQUEST VERIFICATION." 
-      })
-      return
-    }
-    setIsUpdating(true)
-    addDoc(collection(db, "verificationRequests"), { 
-      userId: userDocId, 
-      username: userData.username, 
-      status: "pending", 
-      requestedAt: new Date().toISOString() 
-    }).then(() => {
-      toast({ title: "REQUEST SENT", description: "ADMINISTRATORS WILL REVIEW YOUR DOSSIER." })
-    }).finally(() => setIsUpdating(false))
   }
 
   const handleUpdateUsername = async () => {
@@ -166,26 +138,6 @@ export default function SettingsPage() {
                 className="rounded-xl"
               />
               <Button onClick={handleUpdateUsername} disabled={isUpdating} className="rounded-xl px-6">Apply</Button>
-            </div>
-          </div>
-
-          {/* Verification Section */}
-          <div className="pt-6 border-t space-y-4">
-            <h2 className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground">Verification</h2>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wifi className="h-4 w-4 text-primary" />
-                <span className="text-sm font-bold">{followerCount} / 10,000 Followers</span>
-              </div>
-              <Button 
-                onClick={handleVerificationRequest} 
-                disabled={isUpdating || followerCount < 10000 || userData?.isVerified} 
-                size="sm" 
-                variant="outline"
-                className="rounded-full"
-              >
-                {userData?.isVerified ? "Verified" : "Request Badge"}
-              </Button>
             </div>
           </div>
 
