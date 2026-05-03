@@ -277,7 +277,7 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-background w-full pt-24 pb-20 px-4 sm:px-6">
       <NavigationBar />
-      <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
+      <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
         <div className="flex items-center justify-between">
           <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full hover:bg-accent shrink-0"><ArrowLeft className="h-6 w-6" /></Button>
           {!isOwnProfile && (
@@ -335,7 +335,7 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center border-2 border-primary/20 shrink-0 relative">
               <User className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
@@ -359,8 +359,8 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-            <div className="space-y-8 order-2 md:order-1">
+          <div className="space-y-10 pt-4">
+            <div className="space-y-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Description</h3>
@@ -368,51 +368,21 @@ export default function ProfilePage() {
                 </div>
                 {isEditingDescription ? (
                   <div className="space-y-3">
-                    <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="WRITE SOMETHING..." className="min-h-[100px] bg-card border-primary/20 text-sm" />
+                    <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="WRITE SOMETHING..." className="min-h-[100px] bg-card border-primary/20 text-sm w-full" />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleUpdateDescription} disabled={isSavingDescription} className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none">{isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}SAVE</Button>
                       <Button size="sm" variant="ghost" onClick={() => { setIsEditingDescription(false); setNewDescription(profileUser.description || ""); }} className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none"><X className="h-3 w-3 mr-1" />CANCEL</Button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-base sm:text-lg text-foreground/80 leading-relaxed font-body whitespace-pre-wrap break-words">{profileUser.description || "NO DESCRIPTION SET."}</p>
+                  <p className="text-base sm:text-lg text-foreground/80 leading-relaxed font-body whitespace-pre-wrap break-words w-full">{profileUser.description || "NO DESCRIPTION SET."}</p>
                 )}
               </div>
 
-              {profileUser.pastUsernames && profileUser.pastUsernames.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Past Names</h3>
-                  <div className="flex flex-wrap gap-x-2 gap-y-1">
-                    {profileUser.pastUsernames.map((name: string, i: number) => (
-                      <span key={i} className="text-xs text-muted-foreground/60 italic font-medium">{name}{i < (profileUser.pastUsernames?.length || 0) - 1 ? "," : ""}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col items-start md:items-end gap-6 md:pt-4 order-1 md:order-2">
-              {!isOwnProfile && (
-                <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive gap-2 font-headline text-[10px] font-bold uppercase tracking-widest h-auto p-0 group"><Flag className="h-3 w-3 group-hover:fill-destructive" /> REPORT PROFILE</Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-background border-border w-[95vw] rounded-3xl sm:max-w-[425px]">
-                    <DialogHeader><DialogTitle className="font-headline font-bold text-2xl uppercase">REPORT PROFILE</DialogTitle><DialogDescription>EXPLAIN WHY THIS PROFILE VIOLATES TERMINAL STANDARDS.</DialogDescription></DialogHeader>
-                    <div className="py-6 space-y-4">
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">PART OF PROFILE</label><Select value={reportTarget} onValueChange={(val: any) => setReportTarget(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="SELECT TARGET" /></SelectTrigger><SelectContent><SelectItem value="username">USERNAME</SelectItem><SelectItem value="description">DESCRIPTION</SelectItem></SelectContent></Select></div>
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">VIOLATION CATEGORY</label><Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="SELECT CATEGORY" /></SelectTrigger><SelectContent><SelectItem value="sexual">SEXUAL CONTENT</SelectItem><SelectItem value="inappropriate">INAPPROPRIATE BEHAVIOR</SelectItem><SelectItem value="other">OTHER</SelectItem></SelectContent></Select></div>
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">DETAILS</label><Textarea placeholder="DESCRIBE THE ISSUE..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="min-h-[120px] bg-muted/20 text-sm" /></div>
-                    </div>
-                    <DialogFooter><Button onClick={handleReport} disabled={isReporting || !reportReason || !currentUserData} variant="destructive" className="w-full h-12 font-headline font-bold uppercase text-xs">{isReporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "SUBMIT REPORT"}</Button></DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              )}
-
-              {/* Badges Section */}
-              <div className="flex flex-col items-start md:items-end w-full gap-2 pt-2">
-                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Badges</h3>
-                <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+              {/* Badges Section - Now UNDER Description */}
+              <div className="flex flex-col items-start gap-3 pt-2">
+                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Achievements</h3>
+                <div className="flex flex-wrap gap-2 justify-start">
                   {profileUser.badges?.map((badgeId: string) => {
                     const badge = BADGE_MAP[badgeId]
                     if (!badge) return null
@@ -431,10 +401,40 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-start md:items-end pt-4 border-t border-border/30 w-full">
+              {profileUser.pastUsernames && profileUser.pastUsernames.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Past Names</h3>
+                  <div className="flex flex-wrap gap-x-2 gap-y-1">
+                    {profileUser.pastUsernames.map((name: string, i: number) => (
+                      <span key={i} className="text-xs text-muted-foreground/60 italic font-medium">{name}{i < (profileUser.pastUsernames?.length || 0) - 1 ? "," : ""}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-8 border-t border-border/30 gap-6">
+              <div className="flex flex-col items-start gap-1">
                 <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">JOINED SINCE</span>
                 <div className="flex items-center gap-1.5 text-foreground/60"><Clock className="h-3 w-3" /><span className="text-sm font-medium">{joinDate}</span></div>
               </div>
+
+              {!isOwnProfile && (
+                <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive gap-2 font-headline text-[10px] font-bold uppercase tracking-widest h-auto p-0 group"><Flag className="h-3 w-3 group-hover:fill-destructive" /> REPORT PROFILE</Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-background border-border w-[95vw] rounded-3xl sm:max-w-[425px]">
+                    <DialogHeader><DialogTitle className="font-headline font-bold text-2xl uppercase">REPORT PROFILE</DialogTitle><DialogDescription>EXPLAIN WHY THIS PROFILE VIOLATES TERMINAL STANDARDS.</DialogDescription></DialogHeader>
+                    <div className="py-6 space-y-4">
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">PART OF PROFILE</label><Select value={reportTarget} onValueChange={(val: any) => setReportTarget(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="SELECT TARGET" /></SelectTrigger><SelectContent><SelectItem value="username">USERNAME</SelectItem><SelectItem value="description">DESCRIPTION</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">VIOLATION CATEGORY</label><Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="SELECT CATEGORY" /></SelectTrigger><SelectContent><SelectItem value="sexual">SEXUAL CONTENT</SelectItem><SelectItem value="inappropriate">INAPPROPRIATE BEHAVIOR</SelectItem><SelectItem value="other">OTHER</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">DETAILS</label><Textarea placeholder="DESCRIBE THE ISSUE..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="min-h-[120px] bg-muted/20 text-sm" /></div>
+                    </div>
+                    <DialogFooter><Button onClick={handleReport} disabled={isReporting || !reportReason || !currentUserData} variant="destructive" className="w-full h-12 font-headline font-bold uppercase text-xs">{isReporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "SUBMIT REPORT"}</Button></DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
         </div>

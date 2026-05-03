@@ -103,10 +103,10 @@ export default function PremiumPage() {
 
             <ul className="space-y-6 pt-4">
               {[
-                { icon: Star, text: "10 BEST FRIENDS", sub: "Double the standard limit" },
-                { icon: Coins, text: "10K MONTHLY COINS", sub: "Exclusive regular allowance" },
-                { icon: Award, text: "ELITE BADGE", sub: "Visible to everyone" },
-                { icon: Crown, text: "PRIORITY ACCESS", sub: "Special member status" },
+                { icon: Star, text: "10 Best Friends Limit", sub: "Double the standard limit" },
+                { icon: Coins, text: "10K Monthly Coins", sub: "10K Monthly Coins" },
+                { icon: Award, text: "Premium Badge", sub: "A Premium Badge next to your name" },
+                { icon: Crown, text: "Prioroty", sub: "Special member status" },
               ].map((benefit, i) => (
                 <li key={i} className="flex items-center gap-5">
                   <div className="bg-[#EBF5FF] dark:bg-[#1A202C] p-3 rounded-2xl">
@@ -145,7 +145,7 @@ export default function PremiumPage() {
                   variant="outline"
                   className="h-16 bg-white dark:bg-[#111] border-4 border-[#ddd] dark:border-[#222] font-headline font-bold uppercase text-xs tracking-widest rounded-[24px] hover:bg-accent"
                 >
-                  PERMANENT ACCESS (FREE)
+                  Forever Premium (free)
                 </Button>
                 
                 <p className="text-center text-[11px] text-muted-foreground font-bold uppercase tracking-[0.2em] px-8 leading-relaxed">
