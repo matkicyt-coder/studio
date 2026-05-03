@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -39,10 +38,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-black">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-[440px] space-y-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-headline font-bold tracking-tighter text-white">
+          <h1 className="text-4xl font-headline font-bold tracking-tighter">
             Login
           </h1>
         </div>
@@ -53,7 +52,7 @@ export default function LoginPage() {
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Username" 
-                className="pl-10 bg-background" 
+                className="pl-10" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -66,7 +65,7 @@ export default function LoginPage() {
               <Input 
                 type="password" 
                 placeholder="Password" 
-                className="pl-10 bg-background" 
+                className="pl-10" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -75,7 +74,7 @@ export default function LoginPage() {
           </div>
           <Button 
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-headline font-bold transition-fluid text-white"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-headline font-bold transition-fluid"
             disabled={isLoading}
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Login"}

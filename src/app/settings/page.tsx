@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
@@ -127,49 +126,49 @@ export default function SettingsPage() {
 
   if (isUserLoading || !user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-black">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <main className="min-h-screen bg-black w-full pt-16 flex flex-col">
+    <main className="min-h-screen bg-background w-full pt-16 flex flex-col">
       <NavigationBar />
       
       <div className="max-w-xl mx-auto w-full p-6 space-y-12 animate-fade-in">
-        <h1 className="text-4xl font-headline font-bold text-white tracking-tighter">
+        <h1 className="text-4xl font-headline font-bold tracking-tighter">
           Settings
         </h1>
 
-        <div className="space-y-8 bg-zinc-900/50 p-8 rounded-2xl border border-white/5">
+        <div className="space-y-8 bg-card p-8 rounded-2xl border border-border">
           {/* Username Section */}
           <div className="flex items-center justify-between group">
             <div className="space-y-1">
-              <p className="text-xs font-headline font-bold text-zinc-500 tracking-widest">Username</p>
-              <h2 className="text-xl text-white font-medium">{userData?.username || "..."}</h2>
+              <p className="text-xs font-headline font-bold text-muted-foreground tracking-widest">Username</p>
+              <h2 className="text-xl font-medium">{userData?.username || "..."}</h2>
             </div>
             <Dialog open={isUsernameDialogOpen} onOpenChange={setIsUsernameDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-fluid">
+                <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
                   <Pencil className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-zinc-900 border-white/10 text-white">
+              <DialogContent className="bg-background border-border">
                 <DialogHeader>
                   <DialogTitle className="font-headline font-bold">Change Username</DialogTitle>
-                  <DialogDescription className="text-zinc-400">
-                    This operation costs <span className="text-yellow-500 font-bold">1,000 coins</span>. 
+                  <DialogDescription className="text-muted-foreground">
+                    This operation costs <span className="text-yellow-600 font-bold">1,000 coins</span>. 
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="New Username"
                       value={newUsername}
                       onChange={(e) => setNewUsername(e.target.value)}
-                      className="bg-black border-white/10 pl-10 h-12"
+                      className="pl-10 h-12"
                     />
                   </div>
                 </div>
@@ -177,7 +176,7 @@ export default function SettingsPage() {
                   <Button 
                     onClick={handleUpdateUsername} 
                     disabled={isUpdating || !newUsername}
-                    className="bg-blue-600 hover:bg-blue-700 w-full h-12 font-headline font-bold"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold"
                   >
                     {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm Change"}
                   </Button>
@@ -189,31 +188,31 @@ export default function SettingsPage() {
           {/* Password Section */}
           <div className="flex items-center justify-between group">
             <div className="space-y-1">
-              <p className="text-xs font-headline font-bold text-zinc-500 tracking-widest">Password</p>
-              <h2 className="text-xl text-white font-medium tracking-widest">••••••••</h2>
+              <p className="text-xs font-headline font-bold text-muted-foreground tracking-widest">Password</p>
+              <h2 className="text-xl font-medium tracking-widest">••••••••</h2>
             </div>
             <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-fluid">
+                <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
                   <Pencil className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-zinc-900 border-white/10 text-white">
+              <DialogContent className="bg-background border-border">
                 <DialogHeader>
                   <DialogTitle className="font-headline font-bold">Change Password</DialogTitle>
-                  <DialogDescription className="text-zinc-400">
+                  <DialogDescription className="text-muted-foreground">
                     Secure your account with a new password.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="password"
                       placeholder="New Password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="bg-black border-white/10 pl-10 h-12"
+                      className="pl-10 h-12"
                     />
                   </div>
                 </div>
@@ -221,7 +220,7 @@ export default function SettingsPage() {
                   <Button 
                     onClick={handleUpdatePassword} 
                     disabled={isUpdating || !newPassword}
-                    className="bg-blue-600 hover:bg-blue-700 w-full h-12 font-headline font-bold"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold"
                   >
                     {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Password"}
                   </Button>
@@ -232,13 +231,13 @@ export default function SettingsPage() {
 
           {/* Admin Panel Button */}
           {userData?.isAdmin && (
-            <div className="pt-4 border-t border-white/5">
+            <div className="pt-4 border-t border-border">
               <Link href="/admin">
                 <Button 
                   variant="outline" 
-                  className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white font-headline font-bold gap-2"
+                  className="w-full h-12 bg-secondary/50 border-border font-headline font-bold gap-2"
                 >
-                  <ShieldAlert className="h-5 w-5 text-red-500" />
+                  <ShieldAlert className="h-5 w-5 text-destructive" />
                   Admin Panel
                 </Button>
               </Link>

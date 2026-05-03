@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -220,7 +219,7 @@ export function SignupForm() {
 
           <Button 
             type="submit" 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-headline font-bold"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-headline font-bold"
             disabled={isLoading}
           >
             {isLoading ? "Creating account..." : "Sign Up"}

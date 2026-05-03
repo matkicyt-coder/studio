@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
@@ -71,7 +70,7 @@ export default function AdminPage() {
 
   if (isUserLoading || isUsersLoading || !userData?.isAdmin) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-black">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     )
@@ -134,29 +133,29 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black w-full pt-24 px-6 pb-20">
+    <main className="min-h-screen bg-background w-full pt-24 px-6 pb-20">
       <NavigationBar />
       
       <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
         <div className="flex items-center gap-4">
           <Link href="/settings">
-            <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white rounded-full">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground rounded-full">
               <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
-          <h1 className="text-4xl font-headline font-bold text-white tracking-tighter">
+          <h1 className="text-4xl font-headline font-bold tracking-tighter">
             Admin Management
           </h1>
         </div>
 
         {/* Search Bar */}
         <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500 group-focus-within:text-blue-500 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder="Search by username or sequential ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-zinc-900 border-white/5 h-14 pl-12 text-lg focus:ring-blue-500/20"
+            className="bg-card border-border h-14 pl-12 text-lg focus:ring-primary/20"
           />
         </div>
 
@@ -165,15 +164,15 @@ export default function AdminPage() {
           {filteredUsers?.map((userItem) => (
             <div 
               key={userItem.id} 
-              className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-colors"
+              className="flex items-center justify-between p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
             >
               <div className="flex items-center gap-4">
                 <div className="flex flex-col">
-                  <span className="text-white font-medium text-lg flex items-center gap-2">
+                  <span className="font-medium text-lg flex items-center gap-2">
                     {userItem.username}
-                    {userItem.isAdmin && <ShieldCheck className="h-4 w-4 text-blue-500" />}
+                    {userItem.isAdmin && <ShieldCheck className="h-4 w-4 text-primary" />}
                   </span>
-                  <span className="text-zinc-500 text-sm font-headline tracking-widest">
+                  <span className="text-muted-foreground text-sm font-headline tracking-widest">
                     ID: #{userItem.sequentialId}
                   </span>
                 </div>
@@ -193,15 +192,15 @@ export default function AdminPage() {
                     }}
                     variant="ghost" 
                     size="icon" 
-                    className="text-zinc-500 hover:text-white hover:bg-white/5"
+                    className="text-muted-foreground hover:text-foreground hover:bg-accent"
                   >
                     <Settings2 className="h-5 w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-zinc-900 border-white/10 text-white">
+                <DialogContent className="bg-background border-border">
                   <DialogHeader>
                     <DialogTitle className="font-headline font-bold text-2xl">Manage User: {userItem.username}</DialogTitle>
-                    <DialogDescription className="text-zinc-400">
+                    <DialogDescription className="text-muted-foreground">
                       Update permissions and system placement.
                     </DialogDescription>
                   </DialogHeader>
@@ -209,7 +208,7 @@ export default function AdminPage() {
                   <div className="py-6 space-y-6">
                     {/* Admin Toggle */}
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-zinc-500 tracking-widest uppercase">Admin Privileges</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground tracking-widest uppercase">Admin Privileges</label>
                       <Button
                         onClick={() => handleUpdateAdminStatus(userItem)}
                         disabled={isUpdating}
@@ -232,21 +231,21 @@ export default function AdminPage() {
 
                     {/* Sequential ID Change */}
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-zinc-500 tracking-widest uppercase">Sequential ID Position</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground tracking-widest uppercase">Sequential ID Position</label>
                       <div className="relative">
-                        <Hash className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                        <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           type="number"
                           placeholder="Position Number"
                           value={newSequentialId}
                           onChange={(e) => setNewSequentialId(e.target.value)}
-                          className="bg-black border-white/10 pl-10 h-12"
+                          className="bg-background border-border pl-10 h-12"
                         />
                       </div>
                       <Button
                         onClick={() => handleUpdateSequentialId(userItem)}
                         disabled={isUpdating || !newSequentialId || newSequentialId === userItem.sequentialId.toString()}
-                        className="w-full bg-blue-600 hover:bg-blue-700 font-headline font-bold h-12"
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-headline font-bold h-12"
                       >
                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update ID Position"}
                       </Button>
@@ -258,7 +257,7 @@ export default function AdminPage() {
           ))}
           
           {filteredUsers?.length === 0 && (
-            <div className="text-center py-20 text-zinc-500 font-headline">
+            <div className="text-center py-20 text-muted-foreground font-headline">
               No matching users found.
             </div>
           )}
