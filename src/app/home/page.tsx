@@ -12,14 +12,14 @@ import { FriendCircles } from "@/components/friends/friend-circles"
 import { ShieldCheck } from "lucide-react"
 
 export default function HomePage() {
-  const { user, isUserLoading } = useUser()
+  const { user, userDocId, isUserLoading } = useUser()
   const db = useFirestore()
   const router = useRouter()
 
   const userDocRef = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
-    return doc(db, "users", user.uid)
-  }, [db, user?.uid])
+    if (!db || !userDocId) return null
+    return doc(db, "users", userDocId)
+  }, [db, userDocId])
 
   const { data: userData } = useDoc(userDocRef)
 
@@ -31,25 +31,23 @@ export default function HomePage() {
 
   // Track online status
   useEffect(() => {
-    if (!db || !user?.uid) return
+    if (!db || !userDocId) return
     const interval = setInterval(() => {
-      updateDoc(doc(db, "users", user.uid), {
+      updateDoc(doc(db, "users", userDocId), {
         lastSeen: new Date().toISOString()
       })
     }, 60000)
     return () => clearInterval(interval)
-  }, [db, user?.uid])
+  }, [db, userDocId])
 
   // Monthly Premium Grant Logic
   useEffect(() => {
-    if (!db || !user?.uid || !userData || !userDocRef) return
+    if (!db || !userDocId || !userData || !userDocRef) return
     
-    // Only for active monthly subscribers
     if (userData.premiumType === 'monthly' && userData.premiumStatus === 'active') {
       const now = new Date()
       const lastGrant = userData.lastPremiumGrant ? new Date(userData.lastPremiumGrant) : null
       
-      // Check if premium has expired
       if (userData.premiumExpiry) {
         const expiryDate = new Date(userData.premiumExpiry)
         if (now > expiryDate) {
@@ -62,18 +60,16 @@ export default function HomePage() {
         }
       }
 
-      // Grant monthly 10k coins if 30 days have passed since last grant
       if (lastGrant) {
         const diffInDays = (now.getTime() - lastGrant.getTime()) / (1000 * 3600 * 24)
         if (diffInDays >= 30) {
           updateDoc(userDocRef, {
             coins: increment(10000),
             lastPremiumGrant: now.toISOString(),
-            // Auto-renew expiry if active
             premiumExpiry: new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)).toISOString()
           }).then(() => {
             addDoc(collection(db, "transactions"), {
-              userId: user.uid,
+              userId: userDocId,
               amount: 10000,
               type: "premium_grant",
               createdAt: now.toISOString()
@@ -82,30 +78,23 @@ export default function HomePage() {
         }
       }
     }
-  }, [db, user?.uid, userData, userDocRef])
+  }, [db, userDocId, userData, userDocRef])
 
-  // Sync missing badges based on status
+  // Sync missing badges
   useEffect(() => {
-    if (!db || !user?.uid || !userData) return
-    
+    if (!db || !userDocId || !userData) return
     const missingBadges = []
-    if (userData.isAdmin && !userData.badges?.includes('admin')) {
-      missingBadges.push('admin')
-    }
-    if (userData.isPremium && !userData.badges?.includes('premium')) {
-      missingBadges.push('premium')
-    }
+    if (userData.isAdmin && !userData.badges?.includes('admin')) missingBadges.push('admin')
+    if (userData.isPremium && !userData.badges?.includes('premium')) missingBadges.push('premium')
     
     if (missingBadges.length > 0) {
-      updateDoc(doc(db, "users", user.uid), {
+      updateDoc(doc(db, "users", userDocId), {
         badges: arrayUnion(...missingBadges)
       })
     }
-  }, [db, user?.uid, userData])
+  }, [db, userDocId, userData])
 
-  if (isUserLoading || !user) {
-    return null
-  }
+  if (isUserLoading || !user) return null
 
   const renderWelcomeBadge = () => {
     if (userData?.isAdmin) return <ShieldCheck className="h-7 w-7 text-primary" />
@@ -123,7 +112,6 @@ export default function HomePage() {
           {renderWelcomeBadge()}
           !
         </h1>
-
         <div className="space-y-4">
           <FriendCircles />
         </div>

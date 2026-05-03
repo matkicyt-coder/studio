@@ -8,8 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { 
   User as UserIcon, 
-  Lock, 
-  Calendar
+  Lock
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -31,7 +30,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth, useFirestore } from "@/firebase"
 import { createUserWithEmailAndPassword } from "firebase/auth"
-import { doc, setDoc, runTransaction, collection, query, where, limit, getDocs, addDoc, updateDoc, arrayUnion } from "firebase/firestore"
+import { doc, setDoc, runTransaction, collection, query, where, limit, getDocs, addDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 
 const signupSchema = z.object({
@@ -63,7 +62,7 @@ export function SignupForm() {
   async function onSubmit(data: SignupFormValues) {
     setIsLoading(true)
     try {
-      const email = `${data.username.toLowerCase()}@portal.io`
+      const email = `${data.username.toLowerCase()}@terminal.io`
       const userCredential = await createUserWithEmailAndPassword(auth, email, data.password)
       const user = userCredential.user
 
@@ -77,8 +76,11 @@ export function SignupForm() {
       })
 
       const isAdmin = sequentialId === 1
+      const userDocId = sequentialId.toString()
+      
       const userData = {
-        id: user.uid,
+        id: userDocId,
+        uid: user.uid,
         username: data.username,
         description: "",
         dateOfBirth: data.dob,
@@ -93,7 +95,7 @@ export function SignupForm() {
         createdAt: new Date().toISOString(),
       }
 
-      await setDoc(doc(db, "users", user.uid), userData)
+      await setDoc(doc(db, "users", userDocId), userData)
 
       // Auto-Friend & Auto-Follow ID 2 (Welcome Bot)
       if (sequentialId !== 2) {
@@ -103,16 +105,16 @@ export function SignupForm() {
           const botId = botSnap.docs[0].id
           // Auto Friend
           addDoc(collection(db, "friendships"), {
-            user1: user.uid < botId ? user.uid : botId,
-            user2: user.uid < botId ? botId : user.uid,
+            user1: userDocId < botId ? userDocId : botId,
+            user2: userDocId < botId ? botId : userDocId,
             status: 'accepted',
             requestSentBy: botId,
             createdAt: new Date().toISOString()
           })
           // Bot follows User
-          addDoc(collection(db, "follows"), { followerId: botId, followingId: user.uid, createdAt: new Date().toISOString() })
+          addDoc(collection(db, "follows"), { followerId: botId, followingId: userDocId, createdAt: new Date().toISOString() })
           // User follows Bot
-          addDoc(collection(db, "follows"), { followerId: user.uid, followingId: botId, createdAt: new Date().toISOString() })
+          addDoc(collection(db, "follows"), { followerId: userDocId, followingId: botId, createdAt: new Date().toISOString() })
         }
       }
 

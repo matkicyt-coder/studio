@@ -8,6 +8,7 @@
       "description": "Represents a user registered in the application.",
       "properties": {
         "id": { "type": "string" },
+        "uid": { "type": "string", "description": "The Firebase Auth UID for security lookups." },
         "username": { "type": "string" },
         "email": { "type": "string" },
         "phoneNumber": { "type": "string" },
@@ -45,7 +46,7 @@
         "lastSeen": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "username", "sequentialId", "coins", "isAdmin", "createdAt"]
+      "required": ["id", "uid", "username", "sequentialId", "coins", "isAdmin", "createdAt"]
     },
     "Friendship": {
       "title": "Friendship",
