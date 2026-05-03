@@ -79,7 +79,7 @@ export function NavigationBar() {
             </DialogTrigger>
             <DialogContent className="bg-background border-border">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-headline font-bold tracking-tight">Digital Vault</DialogTitle>
+                <DialogTitle className="text-2xl font-headline font-bold tracking-tight">Buy coins</DialogTitle>
                 <DialogDescription className="text-muted-foreground">
                   Collect free digital currency to unlock premium terminal features.
                 </DialogDescription>
