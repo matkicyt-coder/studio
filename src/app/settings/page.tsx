@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
 import { doc, updateDoc, increment, arrayUnion } from "firebase/firestore"
-import { updatePassword, signOut } from "firebase/auth"
+import { updatePassword } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, LogOut, Loader2, Lock, User, ShieldAlert, Sun, Moon, Calendar, ShieldCheck } from "lucide-react"
+import { Pencil, Loader2, Lock, User, ShieldAlert, Sun, Moon, Calendar, ShieldCheck } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import {
   Dialog,
@@ -38,7 +38,6 @@ import Link from "next/link"
 
 export default function SettingsPage() {
   const { user, isUserLoading } = useUser()
-  const auth = useAuth()
   const db = useFirestore()
   const router = useRouter()
   const { toast } = useToast()
@@ -194,11 +193,6 @@ export default function SettingsPage() {
       .finally(() => setIsUpdating(false))
   }
 
-  const handleLogout = async () => {
-    await signOut(auth)
-    router.push("/login")
-  }
-
   if (isUserLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -307,7 +301,7 @@ export default function SettingsPage() {
           {/* Age/DOB Section */}
           <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="space-y-1">
-              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Birth Date</p>
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Age</p>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-medium uppercase">{userData?.dateOfBirth || "NOT SET"}</h2>
                 {isParentalMode && (
@@ -387,17 +381,6 @@ export default function SettingsPage() {
               </Link>
             </div>
           )}
-        </div>
-
-        <div className="pt-12">
-          <Button 
-            onClick={handleLogout}
-            variant="destructive"
-            className="w-full h-14 font-headline font-bold text-lg flex items-center justify-center gap-3 transition-fluid uppercase tracking-tighter"
-          >
-            <LogOut className="h-5 w-5" />
-            Sign Out
-          </Button>
         </div>
       </div>
 
