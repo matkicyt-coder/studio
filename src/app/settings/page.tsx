@@ -51,6 +51,18 @@ export default function SettingsPage() {
   const handleUpdateUsername = async () => {
     if (!userDocRef || !userData || !newUsername) return
 
+    // Enforce no debt policy
+    const currentCoins = userData.coins ?? 0
+    if (currentCoins < 1000) {
+      toast({
+        variant: "destructive",
+        title: "Insufficient Coins",
+        description: "You need 1,000 coins to change your username.",
+      })
+      setIsUsernameDialogOpen(false)
+      return
+    }
+
     setIsUpdating(true)
     const updateData = {
       username: newUsername,
@@ -146,7 +158,7 @@ export default function SettingsPage() {
                 <DialogHeader>
                   <DialogTitle className="font-headline font-bold">Change Username</DialogTitle>
                   <DialogDescription className="text-zinc-400">
-                    This operation will cost <span className="text-yellow-500 font-bold">1,000 coins</span>. Debt is allowed.
+                    This operation costs <span className="text-yellow-500 font-bold">1,000 coins</span>. 
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
