@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
@@ -9,7 +9,7 @@ import { doc, updateDoc, increment, arrayUnion } from "firebase/firestore"
 import { updatePassword, signOut } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, LogOut, Loader2, Lock, User, ShieldAlert, Sun, Moon } from "lucide-react"
+import { Pencil, LogOut, Loader2, Lock, User, ShieldAlert, Sun, Moon, Calendar, ShieldCheck } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import {
   Dialog,
@@ -20,9 +20,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Switch } from "@/components/ui/switch"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
+import { calculateAge } from "@/lib/utils"
 import Link from "next/link"
 
 export default function SettingsPage() {
@@ -34,9 +45,14 @@ export default function SettingsPage() {
 
   const [newUsername, setNewUsername] = useState("")
   const [newPassword, setNewPassword] = useState("")
+  const [newDob, setNewDob] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
+  
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false)
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+  const [isDobDialogOpen, setIsDobDialogOpen] = useState(false)
+  const [isParentalLockConfirmOpen, setIsParentalLockConfirmOpen] = useState(false)
+  
   const [theme, setTheme] = useState<"light" | "dark">("light")
 
   const userDocRef = useMemoFirebase(() => {
@@ -45,6 +61,9 @@ export default function SettingsPage() {
   }, [db, user?.uid])
 
   const { data: userData } = useDoc(userDocRef)
+
+  const currentAge = useMemo(() => calculateAge(userData?.dateOfBirth), [userData?.dateOfBirth])
+  const isParentalMode = currentAge < 18
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null
@@ -137,6 +156,35 @@ export default function SettingsPage() {
     }
   }
 
+  const handleDobUpdateAttempt = () => {
+    const newAge = calculateAge(newDob)
+    if (newAge < 18) {
+      setIsParentalLockConfirmOpen(true)
+    } else {
+      applyDobUpdate()
+    }
+  }
+
+  const applyDobUpdate = async () => {
+    if (!userDocRef || !newDob) return
+    setIsUpdating(true)
+    
+    updateDoc(userDocRef, { dateOfBirth: newDob })
+      .then(() => {
+        toast({ title: "Birth Date Updated" })
+        setIsDobDialogOpen(false)
+        setIsParentalLockConfirmOpen(false)
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: "update",
+          requestResourceData: { dateOfBirth: newDob },
+        }))
+      })
+      .finally(() => setIsUpdating(false))
+  }
+
   const handleLogout = async () => {
     await signOut(auth)
     router.push("/login")
@@ -155,15 +203,15 @@ export default function SettingsPage() {
       <NavigationBar />
       
       <div className="max-w-xl mx-auto w-full p-6 space-y-12 animate-fade-in">
-        <h1 className="text-4xl font-headline font-bold tracking-tighter">
+        <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase">
           Settings
         </h1>
 
-        <div className="space-y-8 bg-card p-8 rounded-2xl border border-border">
+        <div className="space-y-8 bg-card p-8 rounded-2xl border border-border shadow-sm">
           {/* Username Section */}
           <div className="flex items-center justify-between group">
             <div className="space-y-1">
-              <p className="text-xs font-headline font-bold text-muted-foreground tracking-widest">Username</p>
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Username</p>
               <h2 className="text-xl font-medium">{userData?.username || "..."}</h2>
             </div>
             <Dialog open={isUsernameDialogOpen} onOpenChange={setIsUsernameDialogOpen}>
@@ -172,10 +220,10 @@ export default function SettingsPage() {
                   <Pencil className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-background border-border">
+              <DialogContent className="bg-background border-border sm:rounded-3xl">
                 <DialogHeader>
-                  <DialogTitle className="font-headline font-bold">Change Username</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">
+                  <DialogTitle className="font-headline font-bold text-xl uppercase">Change Username</DialogTitle>
+                  <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                     This operation costs <span className="text-yellow-600 font-bold">1,000 coins</span>. 
                   </DialogDescription>
                 </DialogHeader>
@@ -194,7 +242,7 @@ export default function SettingsPage() {
                   <Button 
                     onClick={handleUpdateUsername} 
                     disabled={isUpdating || !newUsername}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                   >
                     {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm Change"}
                   </Button>
@@ -206,7 +254,7 @@ export default function SettingsPage() {
           {/* Password Section */}
           <div className="flex items-center justify-between group">
             <div className="space-y-1">
-              <p className="text-xs font-headline font-bold text-muted-foreground tracking-widest">Password</p>
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Password</p>
               <h2 className="text-xl font-medium tracking-widest">••••••••</h2>
             </div>
             <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
@@ -215,10 +263,10 @@ export default function SettingsPage() {
                   <Pencil className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-background border-border">
+              <DialogContent className="bg-background border-border sm:rounded-3xl">
                 <DialogHeader>
-                  <DialogTitle className="font-headline font-bold">Change Password</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">
+                  <DialogTitle className="font-headline font-bold text-xl uppercase">Change Password</DialogTitle>
+                  <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                     Secure your account with a new password.
                   </DialogDescription>
                 </DialogHeader>
@@ -238,7 +286,7 @@ export default function SettingsPage() {
                   <Button 
                     onClick={handleUpdatePassword} 
                     disabled={isUpdating || !newPassword}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                   >
                     {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Password"}
                   </Button>
@@ -247,13 +295,67 @@ export default function SettingsPage() {
             </Dialog>
           </div>
 
+          {/* Age Section */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="space-y-1">
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Age Terminal</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-medium">{currentAge} YEARS OLD</h2>
+                {isParentalMode && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                    <ShieldCheck className="h-3 w-3 text-primary" />
+                    <span className="text-[8px] font-headline font-bold uppercase text-primary tracking-widest">Parental Mode Active</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[8px] text-muted-foreground font-headline uppercase tracking-widest">Registered DOB: {userData?.dateOfBirth}</p>
+            </div>
+            {!isParentalMode && (
+              <Dialog open={isDobDialogOpen} onOpenChange={setIsDobDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-background border-border sm:rounded-3xl">
+                  <DialogHeader>
+                    <DialogTitle className="font-headline font-bold text-xl uppercase">Update Birth Date</DialogTitle>
+                    <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Warning: Setting age under 18 will activate permanent Parental Mode.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4 space-y-4">
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="date"
+                        value={newDob}
+                        onChange={(e) => setNewDob(e.target.value)}
+                        className="pl-10 h-12"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      onClick={handleDobUpdateAttempt} 
+                      disabled={isUpdating || !newDob}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
+                    >
+                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Save"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+
           {/* Theme Switch Section */}
           <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="space-y-1">
-              <p className="text-xs font-headline font-bold text-muted-foreground tracking-widest">Visual Mode</p>
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Visual Mode</p>
               <div className="flex items-center gap-2">
                 {theme === "light" ? <Sun className="h-5 w-5 text-primary" /> : <Moon className="h-5 w-5 text-primary" />}
-                <span className="text-sm font-medium">{theme === "light" ? "White Mode" : "Black Mode"}</span>
+                <span className="text-sm font-medium font-headline uppercase tracking-tight">{theme === "light" ? "White Mode" : "Black Mode"}</span>
               </div>
             </div>
             <Switch 
@@ -268,10 +370,10 @@ export default function SettingsPage() {
               <Link href="/admin">
                 <Button 
                   variant="outline" 
-                  className="w-full h-12 bg-secondary/50 border-border font-headline font-bold gap-2"
+                  className="w-full h-12 bg-secondary/50 border-border font-headline font-bold gap-2 uppercase text-xs tracking-widest"
                 >
                   <ShieldAlert className="h-5 w-5 text-destructive" />
-                  Admin Panel
+                  Admin Terminal
                 </Button>
               </Link>
             </div>
@@ -282,13 +384,41 @@ export default function SettingsPage() {
           <Button 
             onClick={handleLogout}
             variant="destructive"
-            className="w-full h-14 font-headline font-bold text-lg flex items-center justify-center gap-3 transition-fluid"
+            className="w-full h-14 font-headline font-bold text-lg flex items-center justify-center gap-3 transition-fluid uppercase tracking-tighter"
           >
             <LogOut className="h-5 w-5" />
-            Logout
+            Sign Out
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={isParentalLockConfirmOpen} onOpenChange={setIsParentalLockConfirmOpen}>
+        <AlertDialogContent className="bg-background border-border sm:rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-headline font-bold text-xl uppercase text-destructive flex items-center gap-2">
+              <ShieldAlert className="h-6 w-6" /> Irreversible Action
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-headline text-xs uppercase tracking-tight text-muted-foreground leading-relaxed">
+              Changing your age to under 18 will activate **Parental Mode**.
+              <br /><br />
+              - All purchases will be permanently locked.
+              <br />
+              - You will NOT be able to change your age back.
+              <br /><br />
+              Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="font-headline font-bold uppercase text-[10px] tracking-widest h-12">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={applyDobUpdate}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-headline font-bold uppercase text-[10px] tracking-widest h-12"
+            >
+              Confirm Parental Mode
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   )
 }

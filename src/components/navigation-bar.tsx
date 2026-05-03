@@ -1,13 +1,14 @@
 
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Settings, Coins, Home, Search, ShieldCheck, User } from "lucide-react"
-import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
+import { Settings, Coins, Home, Search, ShieldCheck, User, LogOut, Lock } from "lucide-react"
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
 import { doc, updateDoc, increment, collection, query, limit } from "firebase/firestore"
-import { formatCurrency, cn } from "@/lib/utils"
+import { signOut } from "firebase/auth"
+import { formatCurrency, cn, calculateAge } from "@/lib/utils"
 import { VerifiedBadge } from "@/components/verified-badge"
 import {
   Dialog,
@@ -17,6 +18,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
@@ -26,6 +33,7 @@ import { FirestorePermissionError } from "@/firebase/errors"
 export function NavigationBar() {
   const { user, isUserLoading } = useUser()
   const db = useFirestore()
+  const auth = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   
@@ -39,6 +47,9 @@ export function NavigationBar() {
   }, [db, user?.uid])
 
   const { data: userData } = useDoc(userDocRef)
+
+  const age = useMemo(() => calculateAge(userData?.dateOfBirth), [userData?.dateOfBirth])
+  const isParentalMode = age < 18
 
   // Memoize users for search - Only query if user is authenticated to avoid permission errors
   const usersRef = useMemoFirebase(() => {
@@ -85,6 +96,11 @@ export function NavigationBar() {
           requestResourceData: updateData,
         }))
       })
+  }
+
+  const handleLogout = async () => {
+    await signOut(auth)
+    router.push("/login")
   }
 
   const coinBalance = userData?.coins ?? 0
@@ -153,48 +169,73 @@ export function NavigationBar() {
 
           <Dialog>
             <DialogTrigger asChild>
-              <button className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-card border border-border hover:bg-accent transition-all font-bold shadow-sm shrink-0">
+              <button 
+                disabled={isParentalMode}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-card border border-border transition-all font-bold shadow-sm shrink-0",
+                  isParentalMode ? "opacity-50 cursor-not-allowed bg-muted" : "hover:bg-accent"
+                )}
+              >
                 <Coins className="h-4 w-4 text-primary" />
-                <span className="font-headline text-xs sm:text-sm">{formatCurrency(coinBalance)}</span>
+                <span className="font-headline text-xs sm:text-sm">{isParentalMode ? "RESTRICTED" : formatCurrency(coinBalance)}</span>
               </button>
             </DialogTrigger>
-            <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-headline font-bold">Buy coins</DialogTitle>
-                <DialogDescription>
-                  Collect free digital currency to unlock premium features.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-3 py-4">
-                {[
-                  { amount: 100, label: "100" },
-                  { amount: 500, label: "500" },
-                  { amount: 1000, label: "1000" },
-                  { amount: 5000, label: "5000" },
-                ].map((tier) => (
-                  <div key={tier.amount} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-accent/20 border border-border">
-                    <div className="flex items-center gap-3">
-                      <Coins className="h-5 w-5 text-primary" />
-                      <span className="font-bold text-base sm:text-lg font-headline">{tier.label} Coins</span>
+            {!isParentalMode && (
+              <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Buy coins</DialogTitle>
+                  <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Collect free digital currency to unlock premium features.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-3 py-4">
+                  {[
+                    { amount: 100, label: "100" },
+                    { amount: 500, label: "500" },
+                    { amount: 1000, label: "1000" },
+                    { amount: 5000, label: "5000" },
+                  ].map((tier) => (
+                    <div key={tier.amount} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-accent/20 border border-border">
+                      <div className="flex items-center gap-3">
+                        <Coins className="h-5 w-5 text-primary" />
+                        <span className="font-bold text-base sm:text-lg font-headline">{tier.label} Coins</span>
+                      </div>
+                      <Button 
+                        onClick={() => handleBuy(tier.amount)}
+                        className="font-bold font-headline h-9 sm:h-10 uppercase text-xs"
+                      >
+                        $0.00
+                      </Button>
                     </div>
-                    <Button 
-                      onClick={() => handleBuy(tier.amount)}
-                      className="font-bold font-headline h-9 sm:h-10"
-                    >
-                      $0.00
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </DialogContent>
+                  ))}
+                </div>
+              </DialogContent>
+            )}
           </Dialog>
 
-          <Link 
-            href="/settings" 
-            className="p-2 rounded-full hover:bg-accent transition-colors shrink-0"
-          >
-            <Settings className="h-6 w-6" />
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-2 rounded-full hover:bg-accent transition-colors shrink-0">
+                <Settings className="h-6 w-6" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-card border border-border rounded-xl p-1 animate-fade-in">
+              <DropdownMenuItem 
+                onClick={() => router.push("/settings")}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-accent transition-colors"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="font-headline font-bold text-[10px] uppercase tracking-widest">Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="font-headline font-bold text-[10px] uppercase tracking-widest">Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </nav>

@@ -17,3 +17,15 @@ export function formatCurrency(value: number): string {
   }
   return value.toString();
 }
+
+export function calculateAge(dobString: string | undefined): number {
+  if (!dobString) return 0;
+  const birthDate = new Date(dobString);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
