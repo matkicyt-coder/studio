@@ -25,7 +25,6 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      // Append the same domain used during signup
       const email = `${username.toLowerCase()}@terminal.io`
       await signInWithEmailAndPassword(auth, email, password)
       router.push("/home")
@@ -43,7 +42,7 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center p-6 bg-black">
       <div className="w-full max-w-[440px] space-y-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-headline font-bold tracking-tighter text-white uppercase">
+          <h1 className="text-4xl font-headline font-bold tracking-tighter text-white">
             Login
           </h1>
         </div>

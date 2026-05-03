@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -51,7 +52,6 @@ export default function SettingsPage() {
   const handleUpdateUsername = async () => {
     if (!userDocRef || !userData || !newUsername) return
 
-    // Enforce no debt policy
     const currentCoins = userData.coins ?? 0
     if (currentCoins < 1000) {
       toast({
@@ -137,7 +137,7 @@ export default function SettingsPage() {
       <NavigationBar />
       
       <div className="max-w-xl mx-auto w-full p-6 space-y-12 animate-fade-in">
-        <h1 className="text-4xl font-headline font-bold text-white tracking-tighter uppercase">
+        <h1 className="text-4xl font-headline font-bold text-white tracking-tighter">
           Settings
         </h1>
 
@@ -145,7 +145,7 @@ export default function SettingsPage() {
           {/* Username Section */}
           <div className="flex items-center justify-between group">
             <div className="space-y-1">
-              <p className="text-xs font-headline font-bold text-zinc-500 uppercase tracking-widest">Username</p>
+              <p className="text-xs font-headline font-bold text-zinc-500 tracking-widest">Username</p>
               <h2 className="text-xl text-white font-medium">{userData?.username || "..."}</h2>
             </div>
             <Dialog open={isUsernameDialogOpen} onOpenChange={setIsUsernameDialogOpen}>
@@ -188,7 +188,7 @@ export default function SettingsPage() {
           {/* Password Section */}
           <div className="flex items-center justify-between group">
             <div className="space-y-1">
-              <p className="text-xs font-headline font-bold text-zinc-500 uppercase tracking-widest">Password</p>
+              <p className="text-xs font-headline font-bold text-zinc-500 tracking-widest">Password</p>
               <h2 className="text-xl text-white font-medium tracking-widest">••••••••</h2>
             </div>
             <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
