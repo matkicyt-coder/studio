@@ -15,6 +15,10 @@
           "type": "string",
           "description": "Chosen username."
         },
+        "email": {
+          "type": "string",
+          "description": "User's verified recovery email."
+        },
         "phoneNumber": {
           "type": "string",
           "description": "User's linked phone number."
