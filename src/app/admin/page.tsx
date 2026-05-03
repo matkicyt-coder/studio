@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc, useAuth } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { collection, query, orderBy, doc, updateDoc, increment, deleteDoc } from "firebase/firestore"
+import { collection, query, orderBy, doc, updateDoc, increment, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore"
 import { sendPasswordResetEmail } from "firebase/auth"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -31,7 +31,9 @@ import {
   Mail,
   Check,
   CheckCircle2,
-  Crown
+  Crown,
+  Users,
+  Award
 } from "lucide-react"
 import {
   Dialog,
@@ -56,6 +58,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { PremiumBadge } from "@/components/premium-badge"
+import { cn } from "@/lib/utils"
 
 const PREDEFINED_REASONS = [
   "Exploiting & Cheating",
@@ -63,6 +66,12 @@ const PREDEFINED_REASONS = [
   "Harassment",
   "Inappropriate Content",
   "Other"
+]
+
+const AVAILABLE_BADGES = [
+  { id: "friendship", name: "Friendship", icon: Users, color: "text-blue-500" },
+  { id: "admin", name: "Administrator", icon: ShieldCheck, color: "text-primary" },
+  { id: "premium", name: "Premium Club", icon: Crown, color: "text-amber-500" }
 ]
 
 export default function AdminPage() {
@@ -136,7 +145,15 @@ export default function AdminPage() {
     if (!db) return
     setIsUpdating(true)
     const targetRef = doc(db, "users", targetUser.id)
-    const updateData = { isAdmin: !targetUser.isAdmin }
+    const isAdminNow = !targetUser.isAdmin
+    const updateData: any = { isAdmin: isAdminNow }
+
+    // Auto grant/revoke admin badge
+    if (isAdminNow) {
+      updateData.badges = arrayUnion("admin")
+    } else {
+      updateData.badges = arrayRemove("admin")
+    }
 
     updateDoc(targetRef, updateData)
       .then(() => {
@@ -144,6 +161,26 @@ export default function AdminPage() {
           title: "Admin status updated",
           description: `${targetUser.username} is now ${updateData.isAdmin ? "an administrator" : "a standard user"}.`,
         })
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: targetRef.path,
+          operation: "update",
+          requestResourceData: updateData,
+        }))
+      })
+      .finally(() => setIsUpdating(false))
+  }
+
+  const handleToggleBadge = async (targetUserId: string, badgeId: string, hasBadge: boolean) => {
+    if (!db) return
+    setIsUpdating(true)
+    const targetRef = doc(db, "users", targetUserId)
+    const updateData = hasBadge ? { badges: arrayRemove(badgeId) } : { badges: arrayUnion(badgeId) }
+
+    updateDoc(targetRef, updateData)
+      .then(() => {
+        toast({ title: hasBadge ? "Badge Revoked" : "Badge Granted" })
       })
       .catch(async (error) => {
         errorEmitter.emit("permission-error", new FirestorePermissionError({
@@ -182,7 +219,14 @@ export default function AdminPage() {
     if (!db) return
     setIsUpdating(true)
     const targetRef = doc(db, "users", targetUser.id)
-    const updateData = { isPremium: !targetUser.isPremium }
+    const isPremiumNow = !targetUser.isPremium
+    const updateData: any = { isPremium: isPremiumNow }
+
+    if (isPremiumNow) {
+      updateData.badges = arrayUnion("premium")
+    } else {
+      updateData.badges = arrayRemove("premium")
+    }
 
     updateDoc(targetRef, updateData)
       .then(() => {
@@ -563,6 +607,32 @@ export default function AdminPage() {
                               {userItem.isPremium ? <PremiumBadge className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
                               {userItem.isPremium ? "Demote" : "Premium"}
                             </Button>
+                          </div>
+                        </div>
+
+                        {/* Badges Management */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Badge Management</label>
+                          <div className="grid grid-cols-1 gap-2">
+                            {AVAILABLE_BADGES.map(badge => {
+                              const hasBadge = userItem.badges?.includes(badge.id)
+                              return (
+                                <Button
+                                  key={badge.id}
+                                  onClick={() => handleToggleBadge(userItem.id, badge.id, hasBadge)}
+                                  disabled={isUpdating}
+                                  variant={hasBadge ? "default" : "outline"}
+                                  className={cn(
+                                    "h-12 font-bold font-headline uppercase text-[10px] gap-2 justify-start px-4",
+                                    hasBadge ? "bg-primary/20 text-primary hover:bg-primary/30 border-primary/30" : ""
+                                  )}
+                                >
+                                  <badge.icon className={cn("h-4 w-4", badge.color)} />
+                                  {badge.name}
+                                  {hasBadge && <Check className="h-3 w-3 ml-auto" />}
+                                </Button>
+                              )
+                            })}
                           </div>
                         </div>
 

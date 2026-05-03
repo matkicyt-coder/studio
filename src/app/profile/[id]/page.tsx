@@ -4,7 +4,7 @@
 import { useParams, useRouter } from "next/navigation"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { collection, query, where, limit, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore"
+import { collection, query, where, limit, addDoc, doc, updateDoc, deleteDoc, arrayUnion } from "firebase/firestore"
 import { 
   User, 
   ShieldCheck, 
@@ -22,7 +22,8 @@ import {
   Star,
   UserCheck,
   UserX,
-  Crown
+  Crown,
+  Users
 } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { PremiumBadge } from "@/components/premium-badge"
@@ -50,6 +51,13 @@ import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+
+const BADGE_MAP: Record<string, { name: string, icon: any, color: string }> = {
+  "friendship": { name: "Friendship", icon: Users, color: "text-blue-500" },
+  "admin": { name: "Administrator", icon: ShieldCheck, color: "text-primary" },
+  "premium": { name: "Premium Club", icon: Crown, color: "text-amber-500" }
+}
 
 export default function ProfilePage() {
   const params = useParams()
@@ -204,6 +212,14 @@ export default function ProfilePage() {
           status: 'accepted',
           createdAt: new Date().toISOString()
         })
+        
+        // Grant friendship badge if they don't have it
+        if (currentUserData && !currentUserData.badges?.includes("friendship")) {
+          updateDoc(doc(db, "users", user.uid), {
+            badges: arrayUnion("friendship")
+          })
+        }
+
         toast({ title: "REQUEST ACCEPTED" })
       }
     } else if (action === 'remove' || action === 'decline' || action === 'cancel') {
@@ -392,7 +408,30 @@ export default function ProfilePage() {
                   </DialogContent>
                 </Dialog>
               )}
-              <div className="flex flex-col items-start md:items-end">
+
+              {/* Badges Section */}
+              <div className="flex flex-col items-start md:items-end w-full gap-2 pt-2">
+                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Badges</h3>
+                <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+                  {profileUser.badges?.map((badgeId: string) => {
+                    const badge = BADGE_MAP[badgeId]
+                    if (!badge) return null
+                    return (
+                      <Link key={badgeId} href="/badges">
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all cursor-pointer shadow-sm group">
+                          <badge.icon className={cn("h-3.5 w-3.5", badge.color)} />
+                          <span className="text-[9px] font-headline font-bold uppercase tracking-tight group-hover:text-primary">{badge.name}</span>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                  {(!profileUser.badges || profileUser.badges.length === 0) && (
+                    <span className="text-[10px] text-muted-foreground/40 italic">No badges earned.</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start md:items-end pt-4 border-t border-border/30 w-full">
                 <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">JOINED SINCE</span>
                 <div className="flex items-center gap-1.5 text-foreground/60"><Clock className="h-3 w-3" /><span className="text-sm font-medium">{joinDate}</span></div>
               </div>

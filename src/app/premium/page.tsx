@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { doc, updateDoc, increment } from "firebase/firestore"
+import { doc, updateDoc, increment, arrayUnion } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { PremiumBadge } from "@/components/premium-badge"
 import { Check, Crown, Star, Coins, Loader2, ArrowLeft } from "lucide-react"
@@ -48,14 +48,15 @@ export default function PremiumPage() {
     setIsUpdating(true)
     const updateData = {
       isPremium: true,
-      coins: isFree ? userData.coins : increment(-20000)
+      coins: isFree ? userData.coins : increment(-20000),
+      badges: arrayUnion("premium")
     }
 
     updateDoc(userDocRef, updateData)
       .then(() => {
         toast({
           title: "PREMIUM ACTIVATED",
-          description: "Welcome to the elite tier of the terminal.",
+          description: "Welcome to the elite tier of the terminal. You've earned the Premium Club badge!",
         })
       })
       .catch(async (error) => {
@@ -103,11 +104,12 @@ export default function PremiumPage() {
                 { icon: Star, text: "UP TO 10 BEST FRIENDS", sub: "Standard limit is 5" },
                 { icon: Coins, text: "10,000 MONTHLY COINS", sub: "Exclusive allowance" },
                 { icon: Check, text: "ELITE PREMIUM BADGE", sub: "Visible on profile & search" },
+                { icon: Award, text: "PREMIUM CLUB BADGE", sub: "Exclusive achievement badge" },
                 { icon: Crown, text: "PRIORITY TERMINAL ACCESS", sub: "Special status" },
               ].map((benefit, i) => (
                 <li key={i} className="flex items-start gap-3">
                   <div className="mt-1 bg-primary/10 p-1.5 rounded-full">
-                    <benefit.icon className="h-4 w-4 text-primary" />
+                    {benefit.icon === Award ? <Award className="h-4 w-4 text-primary" /> : <benefit.icon className="h-4 w-4 text-primary" />}
                   </div>
                   <div>
                     <p className="font-headline font-bold text-sm uppercase tracking-tight">{benefit.text}</p>
@@ -154,3 +156,6 @@ export default function PremiumPage() {
     </main>
   )
 }
+
+// Simple Award icon import for the list mapping
+import { Award as AwardIcon } from "lucide-react"

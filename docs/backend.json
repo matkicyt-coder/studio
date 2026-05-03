@@ -48,6 +48,11 @@
           "type": "boolean",
           "description": "True if the user has premium status."
         },
+        "badges": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of badge IDs earned by the user."
+        },
         "pastUsernames": {
           "type": "array",
           "items": { "type": "string" },
