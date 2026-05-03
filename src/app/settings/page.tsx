@@ -128,11 +128,9 @@ export default function SettingsPage() {
       <div className="max-w-xl mx-auto space-y-6 animate-fade-in">
         <div className="bg-card border rounded-[24px] p-6 md:p-10 space-y-10 shadow-lg">
           
-          {/* IDENTITY SECTION */}
           <section className="space-y-6">
             <h2 className="text-[10px] font-headline font-bold uppercase tracking-[0.2em] text-muted-foreground/60 border-b border-border/50 pb-2">Identity</h2>
 
-            {/* Username Row */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Username</p>
@@ -148,7 +146,6 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            {/* Password Row */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Password</p>
@@ -164,7 +161,6 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            {/* Email Row */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Email Address</p>
@@ -178,7 +174,6 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            {/* Phone Row */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Phone Number</p>
@@ -195,11 +190,9 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* HUB DISPLAY SECTION */}
           <section className="space-y-6">
             <h2 className="text-[10px] font-headline font-bold uppercase tracking-[0.2em] text-muted-foreground/60 border-b border-border/50 pb-2">Hub Display</h2>
 
-            {/* Birth Date Row */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Birth Date</p>
@@ -222,7 +215,6 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            {/* Visual Mode Row */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Visual Mode</p>
@@ -235,7 +227,6 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* ADMIN ACTION */}
           {userData?.isAdmin && (
             <div className="pt-6 border-t border-dashed border-border/50">
               <Link href="/admin">
@@ -258,7 +249,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={!!editField} onOpenChange={(open) => !open && setEditField(null)}>
         <DialogContent className="rounded-[24px] sm:max-w-sm">
           <DialogHeader>

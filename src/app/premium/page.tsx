@@ -8,7 +8,7 @@ import { NavigationBar } from "@/components/navigation-bar"
 import { doc, updateDoc, increment, arrayUnion, addDoc, collection } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { PremiumBadge } from "@/components/premium-badge"
-import { Crown, Star, Coins, Loader2, ArrowLeft, Award, Sparkles, XCircle, Calendar, ShieldCheck } from "lucide-react"
+import { Crown, Star, Coins, Loader2, ArrowLeft, Award, Sparkles, Calendar, ShieldCheck } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -111,7 +111,6 @@ export default function PremiumPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Monthly Pack Card */}
           <div className={`p-8 bg-card border rounded-[40px] flex flex-col justify-between space-y-6 transition-all ${isMonthlyActive ? 'border-primary shadow-lg ring-1 ring-primary' : 'hover:border-primary/50'}`}>
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -165,7 +164,6 @@ export default function PremiumPage() {
             </div>
           </div>
 
-          {/* Lifetime Member Card */}
           <div className={`p-8 bg-card border rounded-[40px] flex flex-col justify-between space-y-6 transition-all ${isLifetimeActive ? 'border-amber-500 shadow-lg ring-1 ring-amber-500' : 'hover:border-amber-500/50'}`}>
             <div className="space-y-6">
               <div className="flex items-center justify-between">
