@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * Blauberia Security Rules Documentation
+     *
+     * CORE PHILOSOPHY:
+     * This ruleset enforces a strict user-ownership model for the Blauberia application.
+     * Access control is fundamentally tied to the Firebase Authentication UID, ensuring
+     * that users can only interact with their own data.
+     *
+     * DATA STRUCTURE:
+     * All user profile data is stored in a top-level collection: /users/{userId}.
+     * The {userId} in the path is designed to match the 'id' field within the document
+     * and the 'uid' of the authenticated user.
+     *
+     * KEY SECURITY DECISIONS:
+     * 1. Authorization Independence: By using the UID as the document ID, we eliminate 
+     *    the need for cross-document lookups (get() calls) for authorization, 
+     *    maximizing performance and reducing costs.
+     * 2. Strict Privacy: Public listing of users is disabled. Users can only fetch 
+     *    their own specific profile document.
+     * 3. Relational Integrity: On creation, the rules enforce that the internal 'id' 
+     *    field matches the document path and the user's UID.
+     * 4. Prototyping Flexibility: While authorization is strictly enforced, the 
+     *    internal data schema (usernames, birthdates, etc.) is not validated for 
+     *    types or presence to allow for rapid frontend iteration.
+     */
+
+    // --- Helper Functions ---
+
+    /**
+     * @description Checks if the request is from an authenticated user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the owner of an existing document.
+     * Used for update and delete operations to ensure the document exists and is owned.
+     */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for individual user profile documents.
+     * @path /users/{userId}
+     * @allow (create) If authenticated user's UID matches {userId} and data.id matches {userId}.
+     * @allow (get, update, delete) If the authenticated user is the owner of the document.
+     * @deny (list) If trying to fetch any document other than their own.
+     * @principle Path-based ownership and self-creation validation.
+     */
+    match /users/{userId} {
+      // READS
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      // WRITES
+      
+      // Allow creation if the path matches the auth UID and the internal ID field matches.
+      allow create: if isOwner(userId) 
+                    && request.resource.data.id == userId;
+      
+      // Allow update only by the owner, ensuring the relationship 'id' never changes.
+      allow update: if isExistingOwner(userId) 
+                    && request.resource.data.id == resource.data.id;
+      
+      // Allow deletion only by the owner of the existing document.
+      allow delete: if isExistingOwner(userId);
+    }
+    
+  }
+}
