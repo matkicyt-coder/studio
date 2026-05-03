@@ -161,7 +161,7 @@ export default function SettingsPage() {
       toast({
         variant: "destructive",
         title: "Action Restricted",
-        description: "You cannot change your age while Parental Mode is active.",
+        description: "You cannot change your birth date while Parental Mode is active.",
       })
       return
     }
@@ -304,12 +304,12 @@ export default function SettingsPage() {
             </Dialog>
           </div>
 
-          {/* Age Section */}
+          {/* Age/DOB Section */}
           <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="space-y-1">
-              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Age</p>
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Birth Date</p>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-medium">{currentAge} YEARS OLD</h2>
+                <h2 className="text-xl font-medium uppercase">{userData?.dateOfBirth || "NOT SET"}</h2>
                 {isParentalMode && (
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
                     <ShieldCheck className="h-3 w-3 text-primary" />
@@ -329,8 +329,8 @@ export default function SettingsPage() {
                   <DialogTitle className="font-headline font-bold text-xl uppercase">Update Birth Date</DialogTitle>
                   <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                     {isParentalMode 
-                      ? "Age changes are locked while Parental Mode is active." 
-                      : "Warning: Setting age under 18 will activate permanent Parental Mode."}
+                      ? "Birth date changes are locked while Parental Mode is active." 
+                      : "Warning: Setting a date that makes you under 18 will activate permanent Parental Mode."}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
@@ -408,11 +408,11 @@ export default function SettingsPage() {
               <ShieldAlert className="h-6 w-6" /> Irreversible Action
             </AlertDialogTitle>
             <AlertDialogDescription className="font-headline text-xs uppercase tracking-tight text-muted-foreground leading-relaxed">
-              Changing your age to under 18 will activate **Parental Mode**.
+              Changing your birth date to make you under 18 will activate **Parental Mode**.
               <br /><br />
               - All purchases will be permanently locked.
               <br />
-              - You will NOT be able to change your age back.
+              - You will NOT be able to change your age or birth date back.
               <br /><br />
               Are you sure you want to proceed?
             </AlertDialogDescription>
