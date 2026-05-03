@@ -4,10 +4,11 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Settings, Coins, Home, Search, ShieldCheck, User, CheckCircle2 } from "lucide-react"
+import { Settings, Coins, Home, Search, ShieldCheck, User } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
 import { doc, updateDoc, increment, collection, query, limit } from "firebase/firestore"
 import { formatCurrency, cn } from "@/lib/utils"
+import { VerifiedBadge } from "@/components/verified-badge"
 import {
   Dialog,
   DialogContent,
@@ -137,7 +138,7 @@ export function NavigationBar() {
                             isPermBanned && "text-muted-foreground italic line-through"
                           )}>
                             {isPermBanned ? "CONTENT DELETED" : u.username}
-                            {!isPermBanned && u.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-primary fill-primary/10 shrink-0" />}
+                            {!isPermBanned && u.isVerified && <VerifiedBadge className="h-3.5 w-3.5 shrink-0" />}
                             {!isPermBanned && u.isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />}
                           </span>
                         </div>

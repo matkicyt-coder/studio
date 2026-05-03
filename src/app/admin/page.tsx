@@ -23,7 +23,6 @@ import {
   User as UserIcon,
   Clock,
   ShieldAlert,
-  CheckCircle2,
   XCircle,
   AlertTriangle,
   ExternalLink,
@@ -53,6 +52,7 @@ import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { VerifiedBadge } from "@/components/verified-badge"
 
 const PREDEFINED_REASONS = [
   "Exploiting & Cheating",
@@ -471,7 +471,7 @@ export default function AdminPage() {
                     <div className="flex flex-col min-w-0">
                       <span className="font-medium text-base sm:text-lg flex items-center gap-2 truncate">
                         {userItem.username}
-                        {userItem.isVerified && <CheckCircle2 className="h-4 w-4 text-primary fill-primary/10 shrink-0" />}
+                        {userItem.isVerified && <VerifiedBadge className="h-4 w-4 shrink-0" />}
                         {userItem.isAdmin && <ShieldCheck className="h-4 w-4 text-primary shrink-0" />}
                         {userItem.isBanned && <Badge variant="destructive" className="h-4 text-[8px] uppercase shrink-0">{userItem.banType}</Badge>}
                       </span>
@@ -502,7 +502,7 @@ export default function AdminPage() {
                         <div className="flex items-center justify-between pr-8">
                           <DialogTitle className="font-headline font-bold text-xl sm:text-2xl uppercase flex items-center gap-2 truncate">
                             {userItem.username}
-                            {userItem.isVerified && <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />}
+                            {userItem.isVerified && <VerifiedBadge className="h-5 w-5 shrink-0" />}
                           </DialogTitle>
                           <Link href={`/profile/${userItem.sequentialId}`} target="_blank">
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
@@ -522,7 +522,7 @@ export default function AdminPage() {
                             variant={userItem.isVerified ? "outline" : "default"}
                             className="w-full h-12 font-bold font-headline uppercase text-xs gap-2"
                           >
-                            {userItem.isVerified ? <CheckCircle2 className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                            {userItem.isVerified ? <VerifiedBadge className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                             {userItem.isVerified ? "Unverify User" : "Verify User"}
                           </Button>
                         </div>

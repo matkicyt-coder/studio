@@ -5,8 +5,8 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore"
-import { CheckCircle2 } from "lucide-react"
+import { doc, updateDoc } from "firebase/firestore"
+import { VerifiedBadge } from "@/components/verified-badge"
 import { FriendCircles } from "@/components/friends/friend-circles"
 
 export default function HomePage() {
@@ -49,7 +49,7 @@ export default function HomePage() {
         <h1 className="text-4xl font-headline font-bold tracking-tighter flex items-center gap-2">
           WELCOME, {userData?.username || "..."}
           {userData?.isVerified && (
-            <CheckCircle2 className="h-6 w-6 text-primary fill-primary/10" />
+            <VerifiedBadge className="h-7 w-7" />
           )}
           !
         </h1>

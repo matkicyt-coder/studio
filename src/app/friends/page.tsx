@@ -5,9 +5,10 @@ import { useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore"
-import { User, MoreVertical, Star, Trash2, ArrowLeft, Loader2, CheckCircle2, UserPlus, UserX, Check, X } from "lucide-react"
+import { User, MoreVertical, Star, Trash2, ArrowLeft, Loader2, UserPlus, UserX, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NavigationBar } from "@/components/navigation-bar"
+import { VerifiedBadge } from "@/components/verified-badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -190,7 +191,7 @@ export default function FriendsPage() {
                       <div className="flex flex-col min-w-0 flex-1">
                         <div className="flex items-center gap-1 min-w-0">
                           <span className="font-bold text-base truncate">{friend.username}</span>
-                          {friend.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-primary fill-primary/10 shrink-0" />}
+                          {friend.isVerified && <VerifiedBadge className="h-3.5 w-3.5 shrink-0" />}
                         </div>
                         <span className="text-[8px] font-headline text-muted-foreground uppercase tracking-widest">#{friend.sequentialId}</span>
                         <div className="mt-2">
