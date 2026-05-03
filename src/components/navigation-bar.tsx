@@ -23,7 +23,7 @@ import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 
 export function NavigationBar() {
-  const { user } = useUser()
+  const { user, isUserLoading } = useUser()
   const db = useFirestore()
   const router = useRouter()
   const { toast } = useToast()
@@ -39,11 +39,11 @@ export function NavigationBar() {
 
   const { data: userData } = useDoc(userDocRef)
 
-  // Memoize users for search
+  // Memoize users for search - Only query if user is authenticated to avoid permission errors
   const usersRef = useMemoFirebase(() => {
-    if (!db) return null
+    if (!db || isUserLoading || !user) return null
     return query(collection(db, "users"), limit(100))
-  }, [db])
+  }, [db, isUserLoading, user])
   
   const { data: allUsers } = useCollection(usersRef)
 

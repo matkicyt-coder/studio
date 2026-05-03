@@ -44,7 +44,7 @@ import { FirestorePermissionError } from "@/firebase/errors"
 export default function ProfilePage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useUser()
+  const { user, isUserLoading } = useUser()
   const db = useFirestore()
   const { toast } = useToast()
   
@@ -60,6 +60,13 @@ export default function ProfilePage() {
 
   const sequentialId = parseInt(params.id as string)
 
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push("/login")
+    }
+  }, [user, isUserLoading, router])
+
   // Current logged in user data to get their username for reports
   const currentUserDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
@@ -68,13 +75,13 @@ export default function ProfilePage() {
   const { data: currentUserData } = useDoc(currentUserDocRef)
 
   const userQuery = useMemoFirebase(() => {
-    if (!db || isNaN(sequentialId)) return null
+    if (!db || !user || isNaN(sequentialId)) return null
     return query(
       collection(db, "users"), 
       where("sequentialId", "==", sequentialId),
       limit(1)
     )
-  }, [db, sequentialId])
+  }, [db, user, sequentialId])
 
   const { data: userDataList, isLoading } = useCollection(userQuery)
   const profileUser = userDataList?.[0]
@@ -140,7 +147,7 @@ export default function ProfilePage() {
       .finally(() => setIsReporting(false))
   }
 
-  if (isLoading) {
+  if (isUserLoading || isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
