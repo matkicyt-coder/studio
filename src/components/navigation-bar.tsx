@@ -1,10 +1,11 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Settings, Coins, Home } from "lucide-react"
-import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
-import { doc, updateDoc, increment } from "firebase/firestore"
+import { Settings, Coins, Home, Mail } from "lucide-react"
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
+import { doc, updateDoc, increment, query, collection, where } from "firebase/firestore"
 import { formatCurrency } from "@/lib/utils"
 import {
   Dialog,
@@ -30,6 +31,17 @@ export function NavigationBar() {
   }, [db, user?.uid])
 
   const { data: userData } = useDoc(userDocRef)
+
+  // Unread messages count
+  const messagesQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return query(
+      collection(db, "messages"),
+      where("receiverId", "==", user.uid),
+      where("isRead", "==", false)
+    )
+  }, [db, user?.uid])
+  const { data: unreadMessages } = useCollection(messagesQuery)
 
   const handleBuy = (amount: number) => {
     if (!userDocRef) return
@@ -68,8 +80,21 @@ export function NavigationBar() {
           <Home className="h-6 w-6" />
         </Link>
 
-        {/* Right Side: Coins and Settings */}
+        {/* Right Side: Messages, Coins and Settings */}
         <div className="flex items-center gap-4">
+          <Link 
+            href="/messages" 
+            className="p-2 rounded-full hover:bg-accent transition-colors relative"
+            aria-label="Messages"
+          >
+            <Mail className="h-6 w-6" />
+            {unreadMessages && unreadMessages.length > 0 && (
+              <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {unreadMessages.length}
+              </span>
+            )}
+          </Link>
+
           <Dialog>
             <DialogTrigger asChild>
               <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background border border-border hover:bg-accent transition-colors font-headline font-bold shadow-sm">

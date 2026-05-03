@@ -59,6 +59,18 @@
       "properties": {
         "count": { "type": "number" }
       }
+    },
+    "Message": {
+      "title": "Message",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "subject": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "isRead": { "type": "boolean" }
+      }
     }
   },
   "auth": {
@@ -74,6 +86,10 @@
     "/counters/{counterId}": {
       "schema": { "$ref": "#/backend/entities/Counter" },
       "description": "Internal counters for sequential IDs."
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/backend/entities/Message" },
+      "description": "Private messages between users."
     }
   }
 }
