@@ -10,13 +10,10 @@ import {
   Lock, 
   Calendar, 
   ChevronRight, 
-  CheckCircle2, 
-  AlertCircle,
   Eye,
   EyeOff
 } from "lucide-react"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -36,16 +33,16 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 
-const signupSchema = z.z.object({
+const signupSchema = z.object({
+  dob: z.string().min(1, "Date of birth is required"),
   username: z.string()
     .min(3, "Username must be at least 3 characters")
     .regex(/^[a-zA-Z0-9_]+$/, "Username must not contain emojis or special characters")
     .refine((val) => !/\p{Emoji_Presentation}/u.test(val), "Emojis are not allowed"),
-  dob: z.string().min(1, "Date of birth is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   gender: z.enum(["male", "female", "non-binary", "prefer-not-to-say"], {
     required_error: "Please select a gender",
   }),
-  password: z.string().min(8, "Password must be at least 8 characters"),
   terms: z.boolean().refine((val) => val === true, "You must agree to the terms"),
 })
 
@@ -59,8 +56,8 @@ export function SignupForm() {
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      username: "",
       dob: "",
+      username: "",
       password: "",
       terms: false,
     },
@@ -81,16 +78,16 @@ export function SignupForm() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           <FormField
             control={form.control}
-            name="username"
+            name="dob"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-medium text-foreground">Unique Username</FormLabel>
+                <FormLabel className="font-medium text-foreground">Date of Birth</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <Input 
-                      placeholder="e.g. digital_pioneer" 
-                      className="pl-10 transition-fluid" 
+                      type="date" 
+                      className="pl-10 transition-fluid block w-full bg-background" 
                       {...field} 
                     />
                   </div>
@@ -100,66 +97,38 @@ export function SignupForm() {
             )}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="dob"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-medium text-foreground">Date of Birth</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
-                      <Input 
-                        type="date" 
-                        className="pl-10 transition-fluid block w-full" 
-                        {...field} 
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="gender"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-medium text-foreground">Gender Identity</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="transition-fluid">
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="non-binary">Non-binary</SelectItem>
-                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="username"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Username" 
+                      className="pl-10 transition-fluid bg-background" 
+                      {...field} 
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-medium text-foreground">Secure Password</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input 
                       type={showPassword ? "text" : "password"} 
-                      placeholder="••••••••" 
-                      className="pl-10 pr-10 transition-fluid" 
+                      placeholder="Password" 
+                      className="pl-10 pr-10 transition-fluid bg-background" 
                       {...field} 
                     />
                     <button
@@ -171,6 +140,30 @@ export function SignupForm() {
                     </button>
                   </div>
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-medium text-foreground">Gender</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="transition-fluid bg-background">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="non-binary">Non-binary</SelectItem>
+                    <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -198,12 +191,12 @@ export function SignupForm() {
 
           <Button 
             type="submit" 
-            className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground h-12 text-base font-headline font-medium transition-fluid group"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-headline font-bold transition-fluid group"
             disabled={isLoading}
           >
             {isLoading ? "Creating account..." : (
               <>
-                Initialize Account
+                Sing up
                 <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </>
             )}
