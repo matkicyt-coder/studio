@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Settings, Coins, Home } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { doc, updateDoc, increment } from "firebase/firestore"
 import { formatCurrency } from "@/lib/utils"
 import {
   Dialog,
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 export function NavigationBar() {
   const { user } = useUser()
@@ -29,12 +31,27 @@ export function NavigationBar() {
 
   const { data: userData } = useDoc(userDocRef)
 
-  const handleBuy = () => {
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: "Failed to start the transaction",
-    })
+  const handleBuy = (amount: number) => {
+    if (!userDocRef) return
+
+    const updateData = {
+      coins: increment(amount),
+    }
+
+    updateDoc(userDocRef, updateData)
+      .then(() => {
+        toast({
+          title: "Purchase Successful",
+          description: `Successfully added ${amount} coins to your account.`,
+        })
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: "update",
+          requestResourceData: updateData,
+        }))
+      })
   }
 
   const coinBalance = userData?.coins ?? 0
@@ -62,28 +79,28 @@ export function NavigationBar() {
             </DialogTrigger>
             <DialogContent className="bg-background border-border">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-headline font-bold tracking-tight">Buy Coins</DialogTitle>
+                <DialogTitle className="text-2xl font-headline font-bold tracking-tight">Digital Vault</DialogTitle>
                 <DialogDescription className="text-muted-foreground">
-                  Purchase digital currency to unlock premium features.
+                  Collect free digital currency to unlock premium terminal features.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 {[
-                  { amount: "100", price: "$0.99" },
-                  { amount: "500", price: "$4.99" },
-                  { amount: "1000", price: "$8.99" },
-                  { amount: "5000", price: "$39.99" },
+                  { amount: 100, label: "100" },
+                  { amount: 500, label: "500" },
+                  { amount: 1000, label: "1000" },
+                  { amount: 5000, label: "5000" },
                 ].map((tier) => (
                   <div key={tier.amount} className="flex items-center justify-between p-4 rounded-lg bg-accent/50 border border-border">
                     <div className="flex items-center gap-3">
                       <Coins className="h-5 w-5 text-yellow-500" />
-                      <span className="font-headline font-bold text-lg">{tier.amount} Coins</span>
+                      <span className="font-headline font-bold text-lg">{tier.label} Coins</span>
                     </div>
                     <Button 
-                      onClick={handleBuy}
+                      onClick={() => handleBuy(tier.amount)}
                       className="bg-primary text-primary-foreground hover:bg-primary/90 font-headline font-bold"
                     >
-                      {tier.price}
+                      $0.00
                     </Button>
                   </div>
                 ))}
