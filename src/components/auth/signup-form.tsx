@@ -8,9 +8,7 @@ import * as z from "zod"
 import { 
   User, 
   Lock, 
-  Calendar, 
-  Eye,
-  EyeOff
+  Calendar
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -34,6 +32,8 @@ import { useAuth, useFirestore } from "@/firebase"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { doc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+import { errorEmitter } from '@/firebase/error-emitter'
+import { FirestorePermissionError } from '@/firebase/errors'
 
 const signupSchema = z.object({
   dob: z.string().min(1, "Date of birth is required"),
@@ -55,7 +55,6 @@ export function SignupForm() {
   const auth = useAuth()
   const db = useFirestore()
   const { toast } = useToast()
-  const [showPassword, setShowPassword] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
 
   const form = useForm<SignupFormValues>({
@@ -75,14 +74,26 @@ export function SignupForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, data.password)
       const user = userCredential.user
 
-      await setDoc(doc(db, "users", user.uid), {
+      const userData = {
         id: user.uid,
         username: data.username,
         dateOfBirth: data.dob,
         gender: data.gender,
         agreedToTerms: data.terms,
         createdAt: new Date().toISOString(),
-      })
+      }
+
+      const userDocRef = doc(db, "users", user.uid)
+      
+      setDoc(userDocRef, userData)
+        .catch(async (serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'create',
+            requestResourceData: userData,
+          })
+          errorEmitter.emit('permission-error', permissionError)
+        })
 
       router.push("/")
     } catch (error: any) {
@@ -152,18 +163,11 @@ export function SignupForm() {
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      type={showPassword ? "text" : "password"} 
+                      type="password" 
                       placeholder="Password" 
-                      className="pl-10 pr-10 transition-fluid bg-background" 
+                      className="pl-10 transition-fluid bg-background" 
                       {...field} 
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -171,7 +175,7 @@ export function SignupForm() {
             )}
           />
 
-          {/* 4. Gender */}
+          {/* 4. Gender (Label text removed per request) */}
           <FormField
             control={form.control}
             name="gender"
@@ -180,7 +184,7 @@ export function SignupForm() {
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger className="transition-fluid bg-background">
-                      <SelectValue placeholder="Select gender" />
+                      <SelectValue placeholder="Gender" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -199,7 +203,7 @@ export function SignupForm() {
             control={form.control}
             name="terms"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-lg bg-muted/30">
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-lg bg-muted/10">
                 <FormControl>
                   <Checkbox
                     checked={field.value}
@@ -208,7 +212,7 @@ export function SignupForm() {
                 </FormControl>
                 <div className="space-y-1 leading-none">
                   <div className="text-sm font-normal text-muted-foreground leading-snug">
-                    I agree to the <span className="text-primary hover:underline cursor-pointer font-medium">Terms of Service</span> and <span className="text-primary hover:underline cursor-pointer font-medium">Privacy Policy</span>.
+                    I agree to the <span className="text-primary hover:underline cursor-pointer font-medium">Terms of Service</span>.
                   </div>
                 </div>
               </FormItem>
@@ -217,7 +221,7 @@ export function SignupForm() {
 
           <Button 
             type="submit" 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-headline font-bold transition-fluid group"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-headline font-bold transition-fluid"
             disabled={isLoading}
           >
             {isLoading ? "Creating account..." : "Sign Up"}
