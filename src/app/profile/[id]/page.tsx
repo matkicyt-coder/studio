@@ -142,6 +142,42 @@ export default function ProfilePage() {
       .finally(() => setIsSavingDescription(false))
   }
 
+  const handleReport = async () => {
+    if (!db || !user || !profileUser || !reportReason || !currentUserData) return
+    setIsReporting(true)
+
+    const reportData = {
+      reporterId: user.uid,
+      reporterUsername: currentUserData.username,
+      targetUserId: profileUser.id,
+      targetUsername: profileUser.username,
+      reportTarget: reportTarget,
+      category: reportCategory,
+      reason: reportReason,
+      status: "pending",
+      createdAt: new Date().toISOString()
+    }
+
+    const reportsRef = collection(db, "reports")
+    addDoc(reportsRef, reportData)
+      .then(() => {
+        toast({
+          title: "REPORT SUBMITTED",
+          description: "THE MODERATION TERMINAL HAS RECEIVED YOUR REPORT."
+        })
+        setIsReportDialogOpen(false)
+        setReportReason("")
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: "reports",
+          operation: "create",
+          requestResourceData: reportData
+        }))
+      })
+      .finally(() => setIsReporting(false))
+  }
+
   const handleActionFriend = async (action: 'add' | 'remove' | 'accept' | 'decline' | 'cancel') => {
     if (!db || !user || !profileUser) return
     
