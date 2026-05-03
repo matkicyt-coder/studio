@@ -21,9 +21,7 @@ import {
   Trash2,
   User as UserIcon,
   Clock,
-  ExternalLink,
   ShieldAlert,
-  Gavel,
   CheckCircle2,
   XCircle,
   AlertTriangle
@@ -83,10 +81,10 @@ export default function AdminPage() {
   }, [user, isUserLoading, router])
 
   useEffect(() => {
-    if (userData && userData.isAdmin === false) {
+    if (!isUserDataLoading && userData && userData.isAdmin === false) {
       router.push("/home")
     }
-  }, [userData, router])
+  }, [userData, isUserDataLoading, router])
 
   if (isUserLoading || isUserDataLoading || (userData?.isAdmin === true && (isUsersLoading || isReportsLoading))) {
     return (
@@ -112,7 +110,7 @@ export default function AdminPage() {
     updateDoc(targetRef, updateData)
       .then(() => {
         toast({
-          title: "Admin Status Updated",
+          title: "Admin status updated",
           description: `${targetUser.username} is now ${updateData.isAdmin ? "an administrator" : "a standard user"}.`,
         })
       })
@@ -138,7 +136,7 @@ export default function AdminPage() {
     updateDoc(targetRef, updateData)
       .then(() => {
         toast({
-          title: "ID Updated",
+          title: "ID updated",
           description: `User ${targetUser.username} position set to #${numericId}.`,
         })
         setEditingUserId(null)
@@ -166,7 +164,7 @@ export default function AdminPage() {
     updateDoc(targetRef, updateData)
       .then(() => {
         toast({
-          title: "Coins Updated",
+          title: "Coins updated",
           description: `${method === 'add' ? "Added" : "Removed"} ${amount} coins for ${targetUser.username}.`,
         })
         setCoinAdjustment("")
@@ -185,7 +183,7 @@ export default function AdminPage() {
     if (!db) return
     const reportRef = doc(db, "reports", reportId)
     deleteDoc(reportRef).then(() => {
-      toast({ title: "Report Cleared" })
+      toast({ title: "Report cleared" })
     }).catch(error => {
       errorEmitter.emit("permission-error", new FirestorePermissionError({
         path: reportRef.path,
@@ -202,13 +200,17 @@ export default function AdminPage() {
       claimedByUsername: userData.username,
       status: "pending"
     }
-    updateDoc(reportRef, updateData).catch(error => {
-      errorEmitter.emit("permission-error", new FirestorePermissionError({
-        path: reportRef.path,
-        operation: "update",
-        requestResourceData: updateData
-      }))
-    })
+    updateDoc(reportRef, updateData)
+      .then(() => {
+        toast({ title: "Report claimed" })
+      })
+      .catch(error => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: reportRef.path,
+          operation: "update",
+          requestResourceData: updateData
+        }))
+      })
   }
 
   const handleUnclaimReport = async (reportId: string) => {
@@ -221,6 +223,7 @@ export default function AdminPage() {
     }
     updateDoc(reportRef, updateData).then(() => {
       setInspectingReportId(null)
+      toast({ title: "Report unclaimed" })
     }).catch(error => {
       errorEmitter.emit("permission-error", new FirestorePermissionError({
         path: reportRef.path,
@@ -235,7 +238,7 @@ export default function AdminPage() {
     const reportRef = doc(db, "reports", reportId)
     const updateData = { status }
     updateDoc(reportRef, updateData).then(() => {
-      toast({ title: "Status Updated", description: `Report marked as ${status}.` })
+      toast({ title: "Status updated", description: `Report marked as ${status}.` })
     }).catch(error => {
       errorEmitter.emit("permission-error", new FirestorePermissionError({
         path: reportRef.path,
@@ -513,7 +516,6 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Status Controls - Only if claimed by current user or someone else */}
                       <div className="space-y-4 pt-4 border-t border-border/50">
                         <h4 className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Set Status</h4>
                         <div className="grid grid-cols-3 gap-2">
