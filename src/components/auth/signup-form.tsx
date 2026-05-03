@@ -42,10 +42,14 @@ const signupSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "Username must not contain emojis or special characters")
     .refine((val) => !/\p{Emoji_Presentation}/u.test(val), "Emojis are not allowed"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Please confirm your password"),
   gender: z.enum(["male", "female", "non-binary", "prefer-not-to-say"], {
     required_error: "Please select a gender",
   }),
   terms: z.boolean().refine((val) => val === true, "You must agree to the terms"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 })
 
 type SignupFormValues = z.infer<typeof signupSchema>
@@ -56,6 +60,7 @@ export function SignupForm() {
   const db = useFirestore()
   const { toast } = useToast()
   const [showPassword, setShowPassword] = React.useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
 
   const form = useForm<SignupFormValues>({
@@ -64,6 +69,7 @@ export function SignupForm() {
       dob: "",
       username: "",
       password: "",
+      confirmPassword: "",
       terms: false,
     },
   })
@@ -71,12 +77,10 @@ export function SignupForm() {
   async function onSubmit(data: SignupFormValues) {
     setIsLoading(true)
     try {
-      // Firebase Auth requires an email, so we derive one from the username for this prototype
       const email = `${data.username.toLowerCase()}@blauberia.io`
       const userCredential = await createUserWithEmailAndPassword(auth, email, data.password)
       const user = userCredential.user
 
-      // Store user profile data in Firestore
       await setDoc(doc(db, "users", user.uid), {
         id: user.uid,
         username: data.username,
@@ -102,6 +106,7 @@ export function SignupForm() {
     <div className="grid gap-6 animate-fade-in">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          {/* 1. Date of Birth */}
           <FormField
             control={form.control}
             name="dob"
@@ -122,6 +127,7 @@ export function SignupForm() {
             )}
           />
 
+          {/* 2. Username */}
           <FormField
             control={form.control}
             name="username"
@@ -142,6 +148,7 @@ export function SignupForm() {
             )}
           />
 
+          {/* 3. Password */}
           <FormField
             control={form.control}
             name="password"
@@ -170,6 +177,36 @@ export function SignupForm() {
             )}
           />
 
+          {/* 4. Secure Password (Confirm Password) */}
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      type={showConfirmPassword ? "text" : "password"} 
+                      placeholder="Secure Password" 
+                      className="pl-10 pr-10 transition-fluid bg-background" 
+                      {...field} 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* 5. Gender */}
           <FormField
             control={form.control}
             name="gender"
@@ -218,7 +255,7 @@ export function SignupForm() {
             className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-headline font-bold transition-fluid group"
             disabled={isLoading}
           >
-            {isLoading ? "Creating account..." : "Sing up"}
+            {isLoading ? "Creating account..." : "Sign Up"}
           </Button>
         </form>
       </Form>
