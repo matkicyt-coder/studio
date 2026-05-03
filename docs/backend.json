@@ -101,6 +101,9 @@
         "reporterId": { "type": "string" },
         "targetUserId": { "type": "string" },
         "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "claimed", "resolved"] },
+        "adminId": { "type": "string" },
+        "aiReview": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     }
