@@ -5,7 +5,7 @@ import { useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore"
-import { User, MoreVertical, Star, Trash2, ArrowLeft, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react"
+import { User, MoreVertical, Star, Trash2, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NavigationBar } from "@/components/navigation-bar"
 import {
@@ -24,14 +24,14 @@ export default function FriendsPage() {
   const { toast } = useToast()
 
   const friendshipsQuery1 = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
+    if (!db || isUserLoading || !user?.uid) return null
     return query(collection(db, "friendships"), where("user1", "==", user.uid))
-  }, [db, user?.uid])
+  }, [db, isUserLoading, user?.uid])
 
   const friendshipsQuery2 = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
+    if (!db || isUserLoading || !user?.uid) return null
     return query(collection(db, "friendships"), where("user2", "==", user.uid))
-  }, [db, user?.uid])
+  }, [db, isUserLoading, user?.uid])
 
   const { data: f1 } = useCollection(friendshipsQuery1)
   const { data: f2 } = useCollection(friendshipsQuery2)
@@ -43,9 +43,9 @@ export default function FriendsPage() {
   , [friendships, user?.uid])
 
   const usersQuery = useMemoFirebase(() => {
-    if (!db || friendIds.length === 0) return null
+    if (!db || isUserLoading || !user || friendIds.length === 0) return null
     return query(collection(db, "users"), where("id", "in", friendIds))
-  }, [db, friendIds])
+  }, [db, isUserLoading, user, friendIds])
 
   const { data: friendsData, isLoading: isFriendsLoading } = useCollection(usersQuery)
 
@@ -90,7 +90,7 @@ export default function FriendsPage() {
     }
   }
 
-  if (isUserLoading || isFriendsLoading) {
+  if (isUserLoading || (isFriendsLoading && friendIds.length > 0)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -181,7 +181,7 @@ export default function FriendsPage() {
           })}
         </div>
 
-        {sortedFriends.length === 0 && (
+        {(!friendsData || friendsData.length === 0) && !isFriendsLoading && (
           <div className="text-center py-32 space-y-4">
             <User className="h-12 w-12 text-muted-foreground/20 mx-auto" />
             <p className="text-muted-foreground font-headline text-[10px] uppercase tracking-[0.2em] italic">The terminal is empty. Add friends to populate your grid.</p>

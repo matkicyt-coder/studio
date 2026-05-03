@@ -9,19 +9,19 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 export function FriendCircles() {
-  const { user } = useUser()
+  const { user, isUserLoading } = useUser()
   const db = useFirestore()
   const router = useRouter()
 
   const friendshipsQuery1 = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
+    if (!db || isUserLoading || !user?.uid) return null
     return query(collection(db, "friendships"), where("user1", "==", user.uid))
-  }, [db, user?.uid])
+  }, [db, isUserLoading, user?.uid])
 
   const friendshipsQuery2 = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
+    if (!db || isUserLoading || !user?.uid) return null
     return query(collection(db, "friendships"), where("user2", "==", user.uid))
-  }, [db, user?.uid])
+  }, [db, isUserLoading, user?.uid])
 
   const { data: f1 } = useCollection(friendshipsQuery1)
   const { data: f2 } = useCollection(friendshipsQuery2)
@@ -33,9 +33,9 @@ export function FriendCircles() {
   , [friendships, user?.uid])
 
   const usersQuery = useMemoFirebase(() => {
-    if (!db || friendIds.length === 0) return null
+    if (!db || isUserLoading || !user || friendIds.length === 0) return null
     return query(collection(db, "users"), where("id", "in", friendIds))
-  }, [db, friendIds])
+  }, [db, isUserLoading, user, friendIds])
 
   const { data: friendsData } = useCollection(usersQuery)
 
@@ -65,6 +65,8 @@ export function FriendCircles() {
   }, [friendsData, friendships, user?.uid])
 
   const displayFriends = sortedFriends.slice(0, 5)
+
+  if (isUserLoading) return null
 
   return (
     <div className="flex items-center gap-6 overflow-x-auto pb-4 scrollbar-hide">

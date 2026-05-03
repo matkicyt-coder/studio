@@ -32,10 +32,18 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
-    // Social connection rules
+    // Social connection rules - Deployment Trigger: v1.0.1
     match /friendships/{friendshipId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
+      // Allow listing friendships if signed in
+      allow read, list: if isSignedIn();
+      
+      // Allow creation if the user is part of the friendship
+      allow create: if isSignedIn() && (
+        request.resource.data.user1 == request.auth.uid || 
+        request.resource.data.user2 == request.auth.uid
+      );
+      
+      // Allow updates/deletes if the user is one of the participants
       allow update, delete: if isSignedIn() && (
         request.auth.uid == resource.data.user1 || 
         request.auth.uid == resource.data.user2
