@@ -29,9 +29,9 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black w-full pt-16">
+    <main className="min-h-screen bg-background w-full pt-16">
       <NavigationBar />
-      <div className="p-8 text-white animate-fade-in">
+      <div className="p-8 animate-fade-in">
         <h1 className="text-4xl font-headline font-bold tracking-tighter">
           Welcome, {userData?.username || "..."}!
         </h1>

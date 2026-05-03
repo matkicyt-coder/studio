@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect } from "react"
@@ -21,7 +20,7 @@ export default function Home() {
   }, [user, isUserLoading, router])
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-black">
+    <div className="flex h-screen w-full items-center justify-center bg-background">
       <Loader2 className="h-6 w-6 animate-spin text-primary" />
     </div>
   )

@@ -3,27 +3,28 @@
 import React, { useState, useEffect, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
+import { Loader2 } from 'lucide-react';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
 }
 
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
+  const [mounted, setMounted] = useState(false);
   const [services, setServices] = useState<ReturnType<typeof initializeFirebase> | null>(null);
 
   useEffect(() => {
-    // Initialize Firebase strictly on the client side after hydration.
-    // This prevents "FIRESTORE INTERNAL ASSERTION FAILED" errors caused by 
-    // inconsistent states between SSR and client-side initialization.
-    setServices(initializeFirebase());
+    setMounted(true);
+    const sdks = initializeFirebase();
+    if (sdks) {
+      setServices(sdks);
+    }
   }, []);
 
-  // Defer rendering children until Firebase is initialized to avoid hydration mismatches
-  // with components that use Firebase hooks.
-  if (!services) {
+  if (!mounted || !services) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
