@@ -42,14 +42,10 @@ const signupSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "Username must not contain emojis or special characters")
     .refine((val) => !/\p{Emoji_Presentation}/u.test(val), "Emojis are not allowed"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Please confirm your password"),
   gender: z.enum(["male", "female", "non-binary", "prefer-not-to-say"], {
     required_error: "Please select a gender",
   }),
   terms: z.boolean().refine((val) => val === true, "You must agree to the terms"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
 })
 
 type SignupFormValues = z.infer<typeof signupSchema>
@@ -60,7 +56,6 @@ export function SignupForm() {
   const db = useFirestore()
   const { toast } = useToast()
   const [showPassword, setShowPassword] = React.useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
 
   const form = useForm<SignupFormValues>({
@@ -69,7 +64,6 @@ export function SignupForm() {
       dob: "",
       username: "",
       password: "",
-      confirmPassword: "",
       terms: false,
     },
   })
@@ -177,36 +171,7 @@ export function SignupForm() {
             )}
           />
 
-          {/* 4. Secure Password (Confirm Password) */}
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      type={showConfirmPassword ? "text" : "password"} 
-                      placeholder="Secure Password" 
-                      className="pl-10 pr-10 transition-fluid bg-background" 
-                      {...field} 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* 5. Gender */}
+          {/* 4. Gender */}
           <FormField
             control={form.control}
             name="gender"
