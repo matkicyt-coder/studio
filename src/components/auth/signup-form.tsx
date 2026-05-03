@@ -31,7 +31,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth, useFirestore } from "@/firebase"
 import { createUserWithEmailAndPassword } from "firebase/auth"
-import { doc, setDoc, runTransaction, collection, query, where, limit, getDocs, addDoc } from "firebase/firestore"
+import { doc, setDoc, runTransaction, collection, query, where, limit, getDocs, addDoc, updateDoc, arrayUnion } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 
 const signupSchema = z.object({

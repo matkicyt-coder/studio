@@ -388,7 +388,7 @@ export default function ProfilePage() {
               {/* Description */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Description</h3>
+                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Description</h3>
                   {isOwnProfile && !isEditingDescription && <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full shrink-0" onClick={() => setIsEditingDescription(true)}><Pencil className="h-3 w-3" /></Button>}
                 </div>
                 {isEditingDescription ? (
@@ -406,7 +406,7 @@ export default function ProfilePage() {
 
               {/* Friends Section - Circular Avatars */}
               <div className="space-y-3 pt-2">
-                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Friends</h3>
+                <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Friends</h3>
                 <div className="flex flex-wrap gap-4">
                   {profileFriends?.map(friend => (
                     <Link key={friend.id} href={`/profile/${friend.sequentialId}`}>
@@ -429,7 +429,7 @@ export default function ProfilePage() {
 
               {/* Badges Section */}
               <div className="flex flex-col items-start gap-3 pt-2">
-                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Achievements</h3>
+                <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Achievements</h3>
                 <div className="flex flex-wrap gap-2 justify-start">
                   {profileUser.badges?.map((badgeId: string) => {
                     const badge = BADGE_MAP[badgeId]
@@ -451,7 +451,7 @@ export default function ProfilePage() {
 
               {profileUser.pastUsernames && profileUser.pastUsernames.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Past names</h3>
+                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Past names</h3>
                   <div className="flex flex-wrap gap-x-2 gap-y-1">
                     {profileUser.pastUsernames.map((name: string, i: number) => (
                       <span key={i} className="text-xs text-muted-foreground/60 italic font-medium">{name}{i < (profileUser.pastUsernames?.length || 0) - 1 ? "," : ""}</span>
@@ -463,7 +463,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-8 border-t border-border/30 gap-6">
               <div className="flex flex-col items-start gap-1">
-                <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">Joined since</span>
+                <span className="text-[10px] font-headline font-bold text-muted-foreground">Joined since</span>
                 <div className="flex items-center gap-1.5 text-foreground/60"><Clock className="h-3 w-3" /><span className="text-sm font-medium">{joinDate}</span></div>
               </div>
 
@@ -475,9 +475,9 @@ export default function ProfilePage() {
                   <DialogContent className="bg-background border-border w-[95vw] rounded-3xl sm:max-w-[425px]">
                     <DialogHeader><DialogTitle className="font-headline font-bold text-2xl">Report profile</DialogTitle><DialogDescription>Explain why this profile violates standards.</DialogDescription></DialogHeader>
                     <div className="py-6 space-y-4">
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Part of profile</label><Select value={reportTarget} onValueChange={(val: any) => setReportTarget(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="Select target" /></SelectTrigger><SelectContent><SelectItem value="username">Username</SelectItem><SelectItem value="description">Description</SelectItem></SelectContent></Select></div>
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Violation category</label><Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent><SelectItem value="sexual">Sexual content</SelectItem><SelectItem value="inappropriate">Inappropriate behavior</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Details</label><Textarea placeholder="Describe the issue..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="min-h-[120px] bg-muted/20 text-sm" /></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground">Part of profile</label><Select value={reportTarget} onValueChange={(val: any) => setReportTarget(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="Select target" /></SelectTrigger><SelectContent><SelectItem value="username">Username</SelectItem><SelectItem value="description">Description</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground">Violation category</label><Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent><SelectItem value="sexual">Sexual content</SelectItem><SelectItem value="inappropriate">Inappropriate behavior</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground">Details</label><Textarea placeholder="Describe the issue..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="min-h-[120px] bg-muted/20 text-sm" /></div>
                     </div>
                     <DialogFooter><Button onClick={handleReport} disabled={isReporting || !reportReason || !currentUserData} variant="destructive" className="w-full h-12 font-headline font-bold text-xs">{isReporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit report"}</Button></DialogFooter>
                   </DialogContent>
