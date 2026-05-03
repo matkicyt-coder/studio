@@ -82,6 +82,15 @@
       "properties": {
         "user1": { "type": "string", "description": "UID of the first user." },
         "user2": { "type": "string", "description": "UID of the second user." },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "accepted"],
+          "description": "Current status of the connection."
+        },
+        "requestSentBy": { 
+          "type": "string", 
+          "description": "UID of the user who initiated the request." 
+        },
         "bestFriendOf": { 
           "type": "array", 
           "items": { "type": "string" },
@@ -89,7 +98,7 @@
         },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["user1", "user2", "createdAt"]
+      "required": ["user1", "user2", "status", "requestSentBy", "createdAt"]
     },
     "Report": {
       "title": "Report",

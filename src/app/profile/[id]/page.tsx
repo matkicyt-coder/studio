@@ -20,7 +20,9 @@ import {
   ShieldAlert,
   UserPlus,
   UserMinus,
-  Star
+  Star,
+  UserCheck,
+  UserX
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -40,7 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -101,15 +103,15 @@ export default function ProfilePage() {
   
   const { data: f1 } = useCollection(friendshipsQuery1)
   const { data: f2 } = useCollection(friendshipsQuery2)
-  const friendship = [...(f1 || []), ...(f2 || [])][0]
+  const friendship = useMemo(() => [...(f1 || []), ...(f2 || [])][0], [f1, f2])
 
   const totalFriendsQuery1 = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
-    return query(collection(db, "friendships"), where("user1", "==", user.uid))
+    return query(collection(db, "friendships"), where("user1", "==", user.uid), where("status", "==", "accepted"))
   }, [db, user?.uid])
   const totalFriendsQuery2 = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
-    return query(collection(db, "friendships"), where("user2", "==", user.uid))
+    return query(collection(db, "friendships"), where("user2", "==", user.uid), where("status", "==", "accepted"))
   }, [db, user?.uid])
   const { data: tf1 } = useCollection(totalFriendsQuery1)
   const { data: tf2 } = useCollection(totalFriendsQuery2)
@@ -140,55 +142,37 @@ export default function ProfilePage() {
       .finally(() => setIsSavingDescription(false))
   }
 
-  const handleToggleFriend = async () => {
+  const handleActionFriend = async (action: 'add' | 'remove' | 'accept' | 'decline' | 'cancel') => {
     if (!db || !user || !profileUser) return
-    if (friendship) {
-      await deleteDoc(doc(db, "friendships", friendship.id))
-      toast({ title: "FRIEND REMOVED" })
-    } else {
+    
+    if (action === 'add') {
       if (totalFriendsCount >= 20) {
         toast({ variant: "destructive", title: "LIMIT REACHED", description: "YOU CAN ONLY HAVE 20 FRIENDS." })
         return
       }
       await addDoc(collection(db, "friendships"), {
-        user1: user.uid,
-        user2: profileUser.id,
+        user1: user.uid < profileUser.id ? user.uid : profileUser.id,
+        user2: user.uid < profileUser.id ? profileUser.id : user.uid,
+        status: 'pending',
+        requestSentBy: user.uid,
         bestFriendOf: [],
         createdAt: new Date().toISOString()
       })
-      toast({ title: "FRIEND ADDED" })
+      toast({ title: "REQUEST SENT" })
+    } else if (action === 'accept') {
+      if (friendship) {
+        await updateDoc(doc(db, "friendships", friendship.id), {
+          status: 'accepted',
+          createdAt: new Date().toISOString()
+        })
+        toast({ title: "REQUEST ACCEPTED" })
+      }
+    } else if (action === 'remove' || action === 'decline' || action === 'cancel') {
+      if (friendship) {
+        await deleteDoc(doc(db, "friendships", friendship.id))
+        toast({ title: action === 'remove' ? "FRIEND REMOVED" : "REQUEST CLEARED" })
+      }
     }
-  }
-
-  const handleReport = async () => {
-    if (!db || !user || !profileUser || !reportReason || !currentUserData) return
-    setIsReporting(true)
-    const reportData = {
-      reporterId: user.uid,
-      reporterUsername: currentUserData.username,
-      targetUserId: profileUser.id,
-      targetUsername: profileUser.username,
-      reportTarget,
-      category: reportCategory,
-      reason: reportReason,
-      status: "pending",
-      createdAt: new Date().toISOString()
-    }
-    const reportsRef = collection(db, "reports")
-    addDoc(reportsRef, reportData)
-      .then(() => {
-        toast({ title: "REPORT SUBMITTED", description: "OUR MODERATION TEAM WILL REVIEW THIS REPORT." })
-        setIsReportDialogOpen(false)
-        setReportReason("")
-      })
-      .catch(error => {
-        errorEmitter.emit("permission-error", new FirestorePermissionError({
-          path: reportsRef.path,
-          operation: "create",
-          requestResourceData: reportData,
-        }))
-      })
-      .finally(() => setIsReporting(false))
   }
 
   if (isUserLoading || isLoading) {
@@ -230,6 +214,11 @@ export default function ProfilePage() {
   const isOwnProfile = user?.uid === profileUser.id
   const joinDate = profileUser.createdAt ? new Date(profileUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "RECENTLY"
 
+  // Relationship status
+  const isAccepted = friendship?.status === 'accepted'
+  const isPending = friendship?.status === 'pending'
+  const wasSentByMe = friendship?.requestSentBy === user?.uid
+
   return (
     <main className="min-h-screen bg-background w-full pt-24 pb-20 px-4 sm:px-6">
       <NavigationBar />
@@ -237,14 +226,57 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between">
           <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full hover:bg-accent shrink-0"><ArrowLeft className="h-6 w-6" /></Button>
           {!isOwnProfile && (
-            <Button 
-              onClick={handleToggleFriend} 
-              variant={friendship ? "outline" : "default"}
-              className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
-            >
-              {friendship ? <UserMinus className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-              {friendship ? "REMOVE FRIEND" : "ADD FRIEND"}
-            </Button>
+            <div className="flex gap-2">
+              {isAccepted ? (
+                <Button 
+                  onClick={() => handleActionFriend('remove')} 
+                  variant="outline"
+                  className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
+                >
+                  <UserMinus className="h-4 w-4" />
+                  REMOVE FRIEND
+                </Button>
+              ) : isPending ? (
+                wasSentByMe ? (
+                  <Button 
+                    onClick={() => handleActionFriend('cancel')} 
+                    variant="secondary"
+                    className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
+                  >
+                    <UserX className="h-4 w-4" />
+                    CANCEL REQUEST
+                  </Button>
+                ) : (
+                  <>
+                    <Button 
+                      onClick={() => handleActionFriend('accept')} 
+                      variant="default"
+                      className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
+                    >
+                      <UserCheck className="h-4 w-4" />
+                      ACCEPT
+                    </Button>
+                    <Button 
+                      onClick={() => handleActionFriend('decline')} 
+                      variant="outline"
+                      className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6 text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                      DECLINE
+                    </Button>
+                  </>
+                )
+              ) : (
+                <Button 
+                  onClick={() => handleActionFriend('add')} 
+                  variant="default"
+                  className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  ADD FRIEND
+                </Button>
+              )}
+            </div>
           )}
         </div>
 

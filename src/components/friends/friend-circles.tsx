@@ -15,12 +15,12 @@ export function FriendCircles() {
 
   const friendshipsQuery1 = useMemoFirebase(() => {
     if (!db || isUserLoading || !user?.uid) return null
-    return query(collection(db, "friendships"), where("user1", "==", user.uid))
+    return query(collection(db, "friendships"), where("user1", "==", user.uid), where("status", "==", "accepted"))
   }, [db, isUserLoading, user?.uid])
 
   const friendshipsQuery2 = useMemoFirebase(() => {
     if (!db || isUserLoading || !user?.uid) return null
-    return query(collection(db, "friendships"), where("user2", "==", user.uid))
+    return query(collection(db, "friendships"), where("user2", "==", user.uid), where("status", "==", "accepted"))
   }, [db, isUserLoading, user?.uid])
 
   const { data: f1 } = useCollection(friendshipsQuery1)
