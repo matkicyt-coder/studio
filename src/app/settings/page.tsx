@@ -9,7 +9,7 @@ import { doc, updateDoc, increment, arrayUnion } from "firebase/firestore"
 import { 
   updatePassword, 
   sendEmailVerification, 
-  updateEmail, 
+  verifyBeforeUpdateEmail,
   linkWithPhoneNumber, 
   RecaptchaVerifier,
   ConfirmationResult
@@ -238,21 +238,29 @@ export default function SettingsPage() {
     setIsUpdating(true)
     
     try {
-      await updateEmail(user, newEmail)
-      await sendEmailVerification(user)
-      await updateDoc(userDocRef, { email: newEmail })
+      // Modern method that sends a link to the NEW email
+      await verifyBeforeUpdateEmail(user, newEmail)
       
       toast({
         title: "Verification sent",
-        description: `We've sent a link to ${newEmail} to confirm your address. Please check your inbox!`,
+        description: `We've sent a link to ${newEmail}. Click it to confirm and update your address.`,
       })
       setIsEmailDialogOpen(false)
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Update failed",
-        description: error.message || "Please re-login to update your email.",
-      })
+      // Handle the specific "operation-not-allowed" error with clear instructions
+      if (error.code === 'auth/operation-not-allowed') {
+        toast({
+          variant: "destructive",
+          title: "Console Setup Required",
+          description: "Please enable 'Email address change' in your Firebase Console (Authentication > Settings > User actions).",
+        })
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Update failed",
+          description: error.message || "Please re-login to update your email.",
+        })
+      }
     } finally {
       setIsUpdating(false)
     }
