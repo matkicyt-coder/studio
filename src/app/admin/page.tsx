@@ -20,7 +20,10 @@ import {
   Flag,
   Trash2,
   User as UserIcon,
-  Clock
+  Clock,
+  ExternalLink,
+  ShieldAlert,
+  Gavel
 } from "lucide-react"
 import {
   Dialog,
@@ -29,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
@@ -44,6 +48,7 @@ export default function AdminPage() {
   const [userSearchQuery, setUserSearchQuery] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
+  const [inspectingReportId, setInspectingReportId] = useState<string | null>(null)
   const [newSequentialId, setNewSequentialId] = useState("")
   const [coinAdjustment, setCoinAdjustment] = useState("")
 
@@ -184,6 +189,42 @@ export default function AdminPage() {
       }))
     })
   }
+
+  const handleClaimReport = async (report: any) => {
+    if (!db || !user || !userData) return
+    const reportRef = doc(db, "reports", report.id)
+    const updateData = {
+      claimedById: user.uid,
+      claimedByUsername: userData.username
+    }
+    updateDoc(reportRef, updateData).catch(error => {
+      errorEmitter.emit("permission-error", new FirestorePermissionError({
+        path: reportRef.path,
+        operation: "update",
+        requestResourceData: updateData
+      }))
+    })
+  }
+
+  const handleUnclaimReport = async (reportId: string) => {
+    if (!db) return
+    const reportRef = doc(db, "reports", reportId)
+    const updateData = {
+      claimedById: null,
+      claimedByUsername: null
+    }
+    updateDoc(reportRef, updateData).then(() => {
+      setInspectingReportId(null)
+    }).catch(error => {
+      errorEmitter.emit("permission-error", new FirestorePermissionError({
+        path: reportRef.path,
+        operation: "update",
+        requestResourceData: updateData
+      }))
+    })
+  }
+
+  const activeReport = allReports?.find(r => r.id === inspectingReportId)
 
   return (
     <main className="min-h-screen bg-background w-full pt-24 px-6 pb-20">
@@ -343,14 +384,32 @@ export default function AdminPage() {
                     <Flag className="h-5 w-5 text-destructive" />
                     <span className="font-headline font-bold text-lg">Report against {report.targetUsername}</span>
                   </div>
-                  <Button 
-                    onClick={() => handleDeleteReport(report.id)}
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-muted-foreground hover:text-destructive rounded-full"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {report.claimedById ? (
+                      <Button 
+                        onClick={() => setInspectingReportId(report.id)}
+                        className="bg-primary hover:bg-primary/90 font-headline font-bold text-xs px-4 rounded-full"
+                      >
+                        Inspect
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => handleClaimReport(report)}
+                        variant="outline"
+                        className="font-headline font-bold text-xs px-4 rounded-full"
+                      >
+                        Claim
+                      </Button>
+                    )}
+                    <Button 
+                      onClick={() => handleDeleteReport(report.id)}
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-muted-foreground hover:text-destructive rounded-full"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 
                 <p className="bg-muted/30 p-4 rounded-xl text-sm italic border border-border/50">
@@ -363,6 +422,12 @@ export default function AdminPage() {
                       <UserIcon className="h-3 w-3" />
                       By {report.reporterUsername}
                     </div>
+                    {report.claimedByUsername && (
+                      <div className="flex items-center gap-1 text-primary">
+                        <ShieldCheck className="h-3 w-3" />
+                        Claimed by {report.claimedByUsername}
+                      </div>
+                    )}
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {new Date(report.createdAt).toLocaleString()}
@@ -376,6 +441,74 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
+
+            {/* Inspect Dialog */}
+            <Dialog open={!!inspectingReportId} onOpenChange={(open) => !open && setInspectingReportId(null)}>
+              <DialogContent className="bg-background border-border sm:max-w-[500px]">
+                {activeReport && (
+                  <>
+                    <DialogHeader>
+                      <DialogTitle className="font-headline font-bold text-2xl flex items-center gap-2">
+                        <ShieldAlert className="h-6 w-6 text-destructive" />
+                        Inspect Report
+                      </DialogTitle>
+                      <DialogDescription>
+                        Full moderation terminal for report against {activeReport.targetUsername}.
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-6 space-y-6">
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Reason</h4>
+                        <p className="bg-muted/30 p-4 rounded-xl text-sm italic border border-border/50">
+                          "{activeReport.reason}"
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Target Username</h4>
+                          <p className="font-medium">{activeReport.targetUsername}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Target User ID</h4>
+                          <p className="font-mono text-xs opacity-60 truncate">{activeReport.targetUserId}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t border-border/50">
+                        <h4 className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Moderation Actions</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-xs font-bold uppercase">
+                            Warn
+                          </Button>
+                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-xs font-bold uppercase">
+                            Perm Ban
+                          </Button>
+                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-xs font-bold uppercase">
+                            Temp Ban (1D)
+                          </Button>
+                          <Button variant="outline" className="opacity-50 cursor-not-allowed font-headline text-xs font-bold uppercase">
+                            Temp Ban (7D)
+                          </Button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground italic text-center">Moderation actions are currently in development.</p>
+                      </div>
+                    </div>
+
+                    <DialogFooter className="flex-col sm:flex-col gap-2">
+                      <Button 
+                        onClick={() => handleUnclaimReport(activeReport.id)}
+                        variant="secondary"
+                        className="w-full font-headline font-bold uppercase text-xs"
+                      >
+                        Unclaim Report
+                      </Button>
+                    </DialogFooter>
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
             
             {allReports?.length === 0 && (
               <div className="text-center py-24 space-y-4 bg-muted/10 rounded-3xl border border-dashed border-border">
