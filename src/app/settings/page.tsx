@@ -6,7 +6,14 @@ import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
 import { doc, updateDoc, increment, arrayUnion } from "firebase/firestore"
-import { updatePassword } from "firebase/auth"
+import { 
+  updatePassword, 
+  sendEmailVerification, 
+  updateEmail, 
+  linkWithPhoneNumber, 
+  RecaptchaVerifier,
+  ConfirmationResult
+} from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Pencil, Loader2, Lock, User, ShieldAlert, Sun, Moon, Calendar, ShieldCheck, Smartphone, CheckCircle2, Mail } from "lucide-react"
@@ -39,6 +46,7 @@ import Link from "next/link"
 export default function SettingsPage() {
   const { user, isUserLoading } = useUser()
   const db = useFirestore()
+  const auth = useAuth()
   const router = useRouter()
   const { toast } = useToast()
 
@@ -48,7 +56,6 @@ export default function SettingsPage() {
   const [newPhone, setNewPhone] = useState("")
   const [newEmail, setNewEmail] = useState("")
   const [phoneVerificationCode, setPhoneVerificationCode] = useState("")
-  const [emailVerificationCode, setEmailVerificationCode] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
   
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false)
@@ -58,7 +65,7 @@ export default function SettingsPage() {
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false)
   
   const [phoneStep, setPhoneStep] = useState<'input' | 'verify'>('input')
-  const [emailStep, setEmailStep] = useState<'input' | 'verify'>('input')
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
   const [isParentalLockConfirmOpen, setIsParentalLockConfirmOpen] = useState(false)
   
   const [theme, setTheme] = useState<"light" | "dark">("light")
@@ -164,103 +171,87 @@ export default function SettingsPage() {
     }
   }
 
-  const handleSendPhoneCode = () => {
-    if (!newPhone) return
+  const handleSendPhoneCode = async () => {
+    if (!newPhone || !user) return
     setIsUpdating(true)
     
-    // Simulate sending code
-    setTimeout(() => {
-      setIsUpdating(false)
+    try {
+      const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible'
+      })
+      
+      const result = await linkWithPhoneNumber(user, newPhone, recaptchaVerifier)
+      setConfirmationResult(result)
       setPhoneStep('verify')
       toast({
-        title: "Verification Sent",
-        description: `A 6-digit code has been sent to ${newPhone}. (Use 123456 for testing)`,
+        title: "Code Sent",
+        description: `A real verification code has been sent to ${newPhone}.`,
       })
-    }, 1500)
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to send SMS",
+        description: error.message,
+      })
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   const handleVerifyAndLinkPhone = async () => {
-    if (!userDocRef || !newPhone || !phoneVerificationCode) return
+    if (!userDocRef || !confirmationResult || !phoneVerificationCode) return
     
-    if (phoneVerificationCode.length !== 6) {
+    setIsUpdating(true)
+    try {
+      await confirmationResult.confirm(phoneVerificationCode)
+      const updateData = { phoneNumber: newPhone }
+      await updateDoc(userDocRef, updateData)
+      
+      toast({ title: "Phone Linked Successfully!" })
+      setNewPhone("")
+      setPhoneVerificationCode("")
+      setPhoneStep('input')
+      setConfirmationResult(null)
+      setIsPhoneDialogOpen(false)
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Invalid Code",
-        description: "Please enter the 6-digit code sent to your phone.",
+        description: "The verification code you entered is incorrect.",
       })
-      return
-    }
-
-    setIsUpdating(true)
-    const updateData = { phoneNumber: newPhone }
-    
-    updateDoc(userDocRef, updateData)
-      .then(() => {
-        toast({ title: "Phone linked!" })
-        setNewPhone("")
-        setPhoneVerificationCode("")
-        setPhoneStep('input')
-        setIsPhoneDialogOpen(false)
-      })
-      .catch(async (error) => {
-        errorEmitter.emit("permission-error", new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: "update",
-          requestResourceData: updateData,
-        }))
-      })
-      .finally(() => setIsUpdating(false))
-  }
-
-  const handleSendEmailCode = () => {
-    if (!newEmail || !newEmail.includes("@")) {
-      toast({ variant: "destructive", title: "Invalid Email", description: "Please enter a valid email address." })
-      return
-    }
-    setIsUpdating(true)
-    
-    // Simulate sending code
-    setTimeout(() => {
+    } finally {
       setIsUpdating(false)
-      setEmailStep('verify')
-      toast({
-        title: "Check your inbox",
-        description: `A verification code has been sent to ${newEmail}. (Use 111111 for testing)`,
-      })
-    }, 1500)
+    }
   }
 
-  const handleVerifyAndLinkEmail = async () => {
-    if (!userDocRef || !newEmail || !emailVerificationCode) return
+  const handleUpdateEmail = async () => {
+    if (!user || !newEmail || !userDocRef) return
+    setIsUpdating(true)
     
-    if (emailVerificationCode.length !== 6) {
+    try {
+      // Step 1: Update the email on the user object (requires recent login)
+      await updateEmail(user, newEmail)
+      
+      // Step 2: Send a real verification link
+      await sendEmailVerification(user)
+      
+      // Step 3: Update Firestore
+      await updateDoc(userDocRef, { email: newEmail })
+      
+      toast({
+        title: "Verification Sent",
+        description: `A real verification link has been sent to ${newEmail}. Please click it to verify.`,
+      })
+      setIsEmailDialogOpen(false)
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Invalid Code",
-        description: "Please enter the 6-digit code sent to your email.",
+        title: "Update Failed",
+        description: error.message || "Please re-login to update your email.",
       })
-      return
+    } finally {
+      setIsUpdating(false)
     }
-
-    setIsUpdating(true)
-    const updateData = { email: newEmail }
-    
-    updateDoc(userDocRef, updateData)
-      .then(() => {
-        toast({ title: "Email verified!" })
-        setNewEmail("")
-        setEmailVerificationCode("")
-        setEmailStep('input')
-        setIsEmailDialogOpen(false)
-      })
-      .catch(async (error) => {
-        errorEmitter.emit("permission-error", new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: "update",
-          requestResourceData: updateData,
-        }))
-      })
-      .finally(() => setIsUpdating(false))
   }
 
   const handleDobUpdateAttempt = () => {
@@ -313,6 +304,9 @@ export default function SettingsPage() {
     <main className="min-h-screen bg-background w-full pt-16 flex flex-col">
       <NavigationBar />
       
+      {/* Container for invisible Recaptcha */}
+      <div id="recaptcha-container"></div>
+
       <div className="max-w-xl mx-auto w-full p-6 space-y-12 animate-fade-in">
         <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase">
           Settings
@@ -408,19 +402,12 @@ export default function SettingsPage() {
               </Dialog>
             </div>
 
-            {/* Email Section */}
             <div className="flex items-center justify-between group">
               <div className="space-y-1">
                 <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Email Address</p>
-                <h2 className="text-xl font-medium truncate max-w-[200px]">{userData?.email || "Not verified"}</h2>
+                <h2 className="text-xl font-medium truncate max-w-[200px]">{userData?.email || "Not linked"}</h2>
               </div>
-              <Dialog open={isEmailDialogOpen} onOpenChange={(open) => {
-                setIsEmailDialogOpen(open)
-                if (!open) {
-                  setEmailStep('input')
-                  setEmailVerificationCode("")
-                }
-              }}>
+              <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
                     <Pencil className="h-4 w-4" />
@@ -428,58 +415,31 @@ export default function SettingsPage() {
                 </DialogTrigger>
                 <DialogContent className="bg-background border-border sm:rounded-3xl">
                   <DialogHeader>
-                    <DialogTitle className="font-headline font-bold text-xl uppercase">
-                      {emailStep === 'input' ? "Verify Email" : "Enter Code"}
-                    </DialogTitle>
+                    <DialogTitle className="font-headline font-bold text-xl uppercase">Link Email</DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {emailStep === 'input' 
-                        ? "Add your email for account recovery and safety." 
-                        : `Check ${newEmail} for your 6-digit code.`}
+                      Enter your email to receive a real verification link.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4">
-                    {emailStep === 'input' ? (
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="email"
-                          placeholder="your@email.com"
-                          value={newEmail}
-                          onChange={(e) => setNewEmail(e.target.value)}
-                          className="pl-10 h-12"
-                        />
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <CheckCircle2 className="absolute left-3 top-3 h-4 w-4 text-primary" />
-                        <Input
-                          placeholder="6-digit code"
-                          value={emailVerificationCode}
-                          onChange={(e) => setEmailVerificationCode(e.target.value)}
-                          maxLength={6}
-                          className="pl-10 h-12 tracking-[0.5em] text-center font-bold"
-                        />
-                      </div>
-                    )}
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        className="pl-10 h-12"
+                      />
+                    </div>
                   </div>
                   <DialogFooter>
-                    {emailStep === 'input' ? (
-                      <Button 
-                        onClick={handleSendEmailCode} 
-                        disabled={isUpdating || !newEmail}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
-                      >
-                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Verification"}
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={handleVerifyAndLinkEmail} 
-                        disabled={isUpdating || !emailVerificationCode}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
-                      >
-                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Save"}
-                      </Button>
-                    )}
+                    <Button 
+                      onClick={handleUpdateEmail} 
+                      disabled={isUpdating || !newEmail}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
+                    >
+                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Link"}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -495,6 +455,7 @@ export default function SettingsPage() {
                 if (!open) {
                   setPhoneStep('input')
                   setPhoneVerificationCode("")
+                  setConfirmationResult(null)
                 }
               }}>
                 <DialogTrigger asChild>
@@ -505,11 +466,11 @@ export default function SettingsPage() {
                 <DialogContent className="bg-background border-border sm:rounded-3xl">
                   <DialogHeader>
                     <DialogTitle className="font-headline font-bold text-xl uppercase">
-                      {phoneStep === 'input' ? "Link Phone Number" : "Verify Number"}
+                      {phoneStep === 'input' ? "Link Phone Number" : "Verify SMS"}
                     </DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                       {phoneStep === 'input' 
-                        ? "Link your phone for quick access and security." 
+                        ? "Link your phone for real SMS security." 
                         : `Enter the code sent to ${newPhone}.`}
                     </DialogDescription>
                   </DialogHeader>
@@ -544,7 +505,7 @@ export default function SettingsPage() {
                         disabled={isUpdating || !newPhone}
                         className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                       >
-                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Code"}
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send SMS Code"}
                       </Button>
                     ) : (
                       <Button 
@@ -552,7 +513,7 @@ export default function SettingsPage() {
                         disabled={isUpdating || !phoneVerificationCode}
                         className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                       >
-                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Link"}
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify Code"}
                       </Button>
                     )}
                   </DialogFooter>
@@ -567,7 +528,7 @@ export default function SettingsPage() {
              
              <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-[10px) font-headline font-bold text-muted-foreground uppercase tracking-widest">Birth Date</p>
+                <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Birth Date</p>
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-medium uppercase">{userData?.dateOfBirth || "NOT SET"}</h2>
                   {isParentalMode && (
