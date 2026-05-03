@@ -58,6 +58,7 @@
         "banExpiry": { "type": "string", "format": "date-time" },
         "banOffensiveContent": { "type": "string" },
         "needsToAcceptTerms": { "type": "boolean" },
+        "lastSeen": { "type": "string", "format": "date-time" },
         "createdAt": {
           "type": "string",
           "description": "Timestamp of account creation.",
@@ -74,6 +75,21 @@
         "isAdmin",
         "createdAt"
       ]
+    },
+    "Friendship": {
+      "title": "Friendship",
+      "type": "object",
+      "properties": {
+        "user1": { "type": "string", "description": "UID of the first user." },
+        "user2": { "type": "string", "description": "UID of the second user." },
+        "bestFriendOf": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "UIDs of the users who have marked this person as a best friend."
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user1", "user2", "createdAt"]
     },
     "Report": {
       "title": "Report",
@@ -132,6 +148,10 @@
     "/counters/{counterId}": {
       "schema": { "$ref": "#/backend/entities/Counter" },
       "description": "Internal counters for sequential IDs."
+    },
+    "/friendships/{friendshipId}": {
+      "schema": { "$ref": "#/backend/entities/Friendship" },
+      "description": "Relationships between users."
     }
   }
 }

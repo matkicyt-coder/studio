@@ -4,7 +4,7 @@
 import { useParams, useRouter } from "next/navigation"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { collection, query, where, limit, addDoc, doc, updateDoc } from "firebase/firestore"
+import { collection, query, where, limit, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { 
   User, 
   ShieldCheck, 
@@ -17,7 +17,10 @@ import {
   Check,
   X,
   CheckCircle2,
-  ShieldAlert
+  ShieldAlert,
+  UserPlus,
+  UserMinus,
+  Star
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -41,6 +44,7 @@ import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
+import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
   const params = useParams()
@@ -61,14 +65,12 @@ export default function ProfilePage() {
 
   const sequentialId = parseInt(params.id as string)
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push("/login")
     }
   }, [user, isUserLoading, router])
 
-  // Current logged in user data to get their username for reports
   const currentUserDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
     return doc(db, "users", user.uid)
@@ -87,6 +89,32 @@ export default function ProfilePage() {
   const { data: userDataList, isLoading } = useCollection(userQuery)
   const profileUser = userDataList?.[0]
 
+  // Friend logic
+  const friendshipsQuery1 = useMemoFirebase(() => {
+    if (!db || !user?.uid || !profileUser) return null
+    return query(collection(db, "friendships"), where("user1", "==", user.uid), where("user2", "==", profileUser.id))
+  }, [db, user?.uid, profileUser])
+  const friendshipsQuery2 = useMemoFirebase(() => {
+    if (!db || !user?.uid || !profileUser) return null
+    return query(collection(db, "friendships"), where("user2", "==", user.uid), where("user1", "==", profileUser.id))
+  }, [db, user?.uid, profileUser])
+  
+  const { data: f1 } = useCollection(friendshipsQuery1)
+  const { data: f2 } = useCollection(friendshipsQuery2)
+  const friendship = [...(f1 || []), ...(f2 || [])][0]
+
+  const totalFriendsQuery1 = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return query(collection(db, "friendships"), where("user1", "==", user.uid))
+  }, [db, user?.uid])
+  const totalFriendsQuery2 = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return query(collection(db, "friendships"), where("user2", "==", user.uid))
+  }, [db, user?.uid])
+  const { data: tf1 } = useCollection(totalFriendsQuery1)
+  const { data: tf2 } = useCollection(totalFriendsQuery2)
+  const totalFriendsCount = (tf1?.length || 0) + (tf2?.length || 0)
+
   useEffect(() => {
     if (profileUser) {
       setNewDescription(profileUser.description || "")
@@ -99,7 +127,7 @@ export default function ProfilePage() {
     const userRef = doc(db, "users", profileUser.id)
     updateDoc(userRef, { description: newDescription })
       .then(() => {
-        toast({ title: "Description updated" })
+        toast({ title: "DESCRIPTION UPDATED" })
         setIsEditingDescription(false)
       })
       .catch(error => {
@@ -112,9 +140,28 @@ export default function ProfilePage() {
       .finally(() => setIsSavingDescription(false))
   }
 
+  const handleToggleFriend = async () => {
+    if (!db || !user || !profileUser) return
+    if (friendship) {
+      await deleteDoc(doc(db, "friendships", friendship.id))
+      toast({ title: "FRIEND REMOVED" })
+    } else {
+      if (totalFriendsCount >= 10) {
+        toast({ variant: "destructive", title: "LIMIT REACHED", description: "YOU CAN ONLY HAVE 10 FRIENDS." })
+        return
+      }
+      await addDoc(collection(db, "friendships"), {
+        user1: user.uid,
+        user2: profileUser.id,
+        bestFriendOf: [],
+        createdAt: new Date().toISOString()
+      })
+      toast({ title: "FRIEND ADDED" })
+    }
+  }
+
   const handleReport = async () => {
     if (!db || !user || !profileUser || !reportReason || !currentUserData) return
-
     setIsReporting(true)
     const reportData = {
       reporterId: user.uid,
@@ -127,18 +174,14 @@ export default function ProfilePage() {
       status: "pending",
       createdAt: new Date().toISOString()
     }
-
     const reportsRef = collection(db, "reports")
     addDoc(reportsRef, reportData)
       .then(() => {
-        toast({
-          title: "Report Submitted",
-          description: "Thank you. Our moderation team will review this report.",
-        })
+        toast({ title: "REPORT SUBMITTED", description: "OUR MODERATION TEAM WILL REVIEW THIS REPORT." })
         setIsReportDialogOpen(false)
         setReportReason("")
       })
-      .catch(async (error) => {
+      .catch(error => {
         errorEmitter.emit("permission-error", new FirestorePermissionError({
           path: reportsRef.path,
           operation: "create",
@@ -156,151 +199,102 @@ export default function ProfilePage() {
     )
   }
 
-  if (!profileUser) {
-    return (
-      <main className="min-h-screen bg-background w-full pt-24 px-6">
-        <NavigationBar />
-        <div className="max-w-xl mx-auto text-center space-y-6">
-          <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto" />
-          <h1 className="text-2xl sm:text-3xl font-headline font-bold uppercase">User Not Found</h1>
-          <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
-            <ArrowLeft className="h-4 w-4" /> Back Home
-          </Button>
-        </div>
-      </main>
-    )
-  }
+  if (!profileUser) return (
+    <main className="min-h-screen bg-background w-full pt-24 px-6">
+      <NavigationBar />
+      <div className="max-w-xl mx-auto text-center space-y-6">
+        <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto" />
+        <h1 className="text-2xl sm:text-3xl font-headline font-bold uppercase">USER NOT FOUND</h1>
+        <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
+          <ArrowLeft className="h-4 w-4" /> BACK HOME
+        </Button>
+      </div>
+    </main>
+  )
 
-  // Handle Perm Banned Users
   const isPermBanned = profileUser.isBanned && profileUser.banType === 'perm'
-  if (isPermBanned) {
-    return (
-      <main className="min-h-screen bg-background w-full pt-24 px-6">
-        <NavigationBar />
-        <div className="max-w-xl mx-auto text-center space-y-6 animate-fade-in">
-          <ShieldAlert className="h-16 w-16 text-destructive mx-auto" />
-          <h1 className="text-2xl sm:text-3xl font-headline font-bold uppercase tracking-tighter">Account Terminated</h1>
-          <p className="text-muted-foreground font-body text-sm sm:text-base">
-            This profile is no longer available due to a permanent violation of the Terms of Service.
-          </p>
-          <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
-            <ArrowLeft className="h-4 w-4" /> Back Home
-          </Button>
-        </div>
-      </main>
-    )
-  }
+  if (isPermBanned) return (
+    <main className="min-h-screen bg-background w-full pt-24 px-6">
+      <NavigationBar />
+      <div className="max-w-xl mx-auto text-center space-y-6 animate-fade-in">
+        <ShieldAlert className="h-16 w-16 text-destructive mx-auto" />
+        <h1 className="text-2xl sm:text-3xl font-headline font-bold uppercase tracking-tighter">ACCOUNT TERMINATED</h1>
+        <p className="text-muted-foreground font-body text-sm sm:text-base">THIS PROFILE IS NO LONGER AVAILABLE DUE TO A VIOLATION OF THE TERMS OF SERVICE.</p>
+        <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
+          <ArrowLeft className="h-4 w-4" /> BACK HOME
+        </Button>
+      </div>
+    </main>
+  )
 
   const isOwnProfile = user?.uid === profileUser.id
-  const joinDate = profileUser.createdAt 
-    ? new Date(profileUser.createdAt).toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric'
-      })
-    : "Recently"
+  const joinDate = profileUser.createdAt ? new Date(profileUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "RECENTLY"
 
   return (
     <main className="min-h-screen bg-background w-full pt-24 pb-20 px-4 sm:px-6">
       <NavigationBar />
-      
       <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
-        <div className="flex items-center">
-          <Button 
-            onClick={() => router.back()} 
-            variant="ghost" 
-            size="icon" 
-            className="rounded-full hover:bg-accent shrink-0"
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
+        <div className="flex items-center justify-between">
+          <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full hover:bg-accent shrink-0"><ArrowLeft className="h-6 w-6" /></Button>
+          {!isOwnProfile && (
+            <Button 
+              onClick={handleToggleFriend} 
+              variant={friendship ? "outline" : "default"}
+              className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
+            >
+              {friendship ? <UserMinus className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+              {friendship ? "REMOVE FRIEND" : "ADD FRIEND"}
+            </Button>
+          )}
         </div>
 
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center border-2 border-primary/20 shrink-0">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center border-2 border-primary/20 shrink-0 relative">
               <User className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+              {friendship?.bestFriendOf?.includes(user?.uid) && (
+                <div className="absolute -top-1 -right-1">
+                  <Star className="h-5 w-5 text-yellow-500 fill-yellow-500 drop-shadow-sm" />
+                </div>
+              )}
             </div>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter uppercase flex items-center gap-2 truncate">
                   {profileUser.username}
-                  {profileUser.isVerified && (
-                    <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary fill-primary/10 shrink-0" />
-                  )}
+                  {profileUser.isVerified && <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary fill-primary/10 shrink-0" />}
                 </h1>
-                {profileUser.isAdmin && (
-                  <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
-                )}
+                {profileUser.isAdmin && <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />}
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
             <div className="space-y-8 order-2 md:order-1">
-              {/* Description Section */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Description</h3>
-                  {isOwnProfile && !isEditingDescription && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 rounded-full shrink-0"
-                      onClick={() => setIsEditingDescription(true)}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                  )}
+                  {isOwnProfile && !isEditingDescription && <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full shrink-0" onClick={() => setIsEditingDescription(true)}><Pencil className="h-3 w-3" /></Button>}
                 </div>
-                
                 {isEditingDescription ? (
                   <div className="space-y-3">
-                    <Textarea 
-                      value={newDescription}
-                      onChange={(e) => setNewDescription(e.target.value)}
-                      placeholder="Write something about yourself..."
-                      className="min-h-[100px] bg-card border-primary/20 text-sm"
-                    />
+                    <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="WRITE SOMETHING..." className="min-h-[100px] bg-card border-primary/20 text-sm" />
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        onClick={handleUpdateDescription}
-                        disabled={isSavingDescription}
-                        className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none"
-                      >
-                        {isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
-                        Save
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => {
-                          setIsEditingDescription(false)
-                          setNewDescription(profileUser.description || "")
-                        }}
-                        className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none"
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        Cancel
-                      </Button>
+                      <Button size="sm" onClick={handleUpdateDescription} disabled={isSavingDescription} className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none">{isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}SAVE</Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setIsEditingDescription(false); setNewDescription(profileUser.description || ""); }} className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none"><X className="h-3 w-3 mr-1" />CANCEL</Button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-base sm:text-lg text-foreground/80 leading-relaxed font-body whitespace-pre-wrap break-words">
-                    {profileUser.description || "No description set."}
-                  </p>
+                  <p className="text-base sm:text-lg text-foreground/80 leading-relaxed font-body whitespace-pre-wrap break-words">{profileUser.description || "NO DESCRIPTION SET."}</p>
                 )}
               </div>
 
-              {/* History Section */}
               {profileUser.pastUsernames && profileUser.pastUsernames.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Past Names</h3>
                   <div className="flex flex-wrap gap-x-2 gap-y-1">
                     {profileUser.pastUsernames.map((name: string, i: number) => (
-                      <span key={i} className="text-xs text-muted-foreground/60 italic font-medium">
-                        {name}{i < (profileUser.pastUsernames?.length || 0) - 1 ? "," : ""}
-                      </span>
+                      <span key={i} className="text-xs text-muted-foreground/60 italic font-medium">{name}{i < (profileUser.pastUsernames?.length || 0) - 1 ? "," : ""}</span>
                     ))}
                   </div>
                 </div>
@@ -308,88 +302,28 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex flex-col items-start md:items-end gap-6 md:pt-4 order-1 md:order-2">
-              {/* Metadata and Actions Section */}
               {!isOwnProfile && (
                 <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive gap-2 font-headline text-[10px] font-bold uppercase tracking-widest h-auto p-0 group">
-                      <Flag className="h-3 w-3 group-hover:fill-destructive" /> Report Profile
-                    </Button>
+                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive gap-2 font-headline text-[10px] font-bold uppercase tracking-widest h-auto p-0 group"><Flag className="h-3 w-3 group-hover:fill-destructive" /> REPORT PROFILE</Button>
                   </DialogTrigger>
                   <DialogContent className="bg-background border-border w-[95vw] rounded-3xl sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle className="font-headline font-bold text-2xl uppercase">Report Profile</DialogTitle>
-                      <DialogDescription>
-                        Explain why this profile violates terminal standards.
-                      </DialogDescription>
-                    </DialogHeader>
+                    <DialogHeader><DialogTitle className="font-headline font-bold text-2xl uppercase">REPORT PROFILE</DialogTitle><DialogDescription>EXPLAIN WHY THIS PROFILE VIOLATES TERMINAL STANDARDS.</DialogDescription></DialogHeader>
                     <div className="py-6 space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Part of profile</label>
-                        <Select value={reportTarget} onValueChange={(val: any) => setReportTarget(val)}>
-                          <SelectTrigger className="bg-muted/20 h-12">
-                            <SelectValue placeholder="Select target" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="username">Username</SelectItem>
-                            <SelectItem value="description">Description</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Violation Category</label>
-                        <Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}>
-                          <SelectTrigger className="bg-muted/20 h-12">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sexual">Sexual content</SelectItem>
-                            <SelectItem value="inappropriate">Inappropriate behavior</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Details</label>
-                        <Textarea
-                          placeholder="Describe the issue in detail..."
-                          value={reportReason}
-                          onChange={(e) => setReportReason(e.target.value)}
-                          className="min-h-[120px] bg-muted/20 text-sm"
-                        />
-                      </div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">PART OF PROFILE</label><Select value={reportTarget} onValueChange={(val: any) => setReportTarget(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="SELECT TARGET" /></SelectTrigger><SelectContent><SelectItem value="username">USERNAME</SelectItem><SelectItem value="description">DESCRIPTION</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">VIOLATION CATEGORY</label><Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="SELECT CATEGORY" /></SelectTrigger><SelectContent><SelectItem value="sexual">SEXUAL CONTENT</SelectItem><SelectItem value="inappropriate">INAPPROPRIATE BEHAVIOR</SelectItem><SelectItem value="other">OTHER</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">DETAILS</label><Textarea placeholder="DESCRIBE THE ISSUE..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="min-h-[120px] bg-muted/20 text-sm" /></div>
                     </div>
-                    <DialogFooter>
-                      <Button 
-                        onClick={handleReport}
-                        disabled={isReporting || !reportReason || !currentUserData}
-                        variant="destructive"
-                        className="w-full h-12 font-headline font-bold uppercase text-xs"
-                      >
-                        {isReporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Report"}
-                      </Button>
-                    </DialogFooter>
+                    <DialogFooter><Button onClick={handleReport} disabled={isReporting || !reportReason || !currentUserData} variant="destructive" className="w-full h-12 font-headline font-bold uppercase text-xs">{isReporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "SUBMIT REPORT"}</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               )}
-
               <div className="flex flex-col items-start md:items-end">
-                <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">Joined Since</span>
-                <div className="flex items-center gap-1.5 text-foreground/60">
-                  <Clock className="h-3 w-3" />
-                  <span className="text-sm font-medium">{joinDate}</span>
-                </div>
+                <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">JOINED SINCE</span>
+                <div className="flex items-center gap-1.5 text-foreground/60"><Clock className="h-3 w-3" /><span className="text-sm font-medium">{joinDate}</span></div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="pt-12 text-center">
-          <p className="text-muted-foreground text-[10px] font-headline uppercase tracking-widest opacity-40">
-            Registered: {profileUser.createdAt ? new Date(profileUser.createdAt).toLocaleTimeString() : "..."}
-          </p>
         </div>
       </div>
     </main>
