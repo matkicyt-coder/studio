@@ -3,9 +3,10 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc, useAuth } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
 import { collection, query, orderBy, doc, updateDoc, increment, deleteDoc } from "firebase/firestore"
+import { sendPasswordResetEmail } from "firebase/auth"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -27,7 +28,8 @@ import {
   AlertTriangle,
   ExternalLink,
   Ban,
-  Eraser
+  Eraser,
+  Mail
 } from "lucide-react"
 import {
   Dialog,
@@ -47,6 +49,7 @@ import { Badge } from "@/components/ui/badge"
 export default function AdminPage() {
   const { user, isUserLoading } = useUser()
   const db = useFirestore()
+  const auth = useAuth()
   const router = useRouter()
   const { toast } = useToast()
 
@@ -264,6 +267,28 @@ export default function AdminPage() {
       .finally(() => setIsUpdating(false))
   }
 
+  const handleResetPassword = async (targetUser: any) => {
+    if (!auth) return
+    setIsUpdating(true)
+    const email = `${targetUser.username.toLowerCase()}@terminal.io`
+    
+    sendPasswordResetEmail(auth, email)
+      .then(() => {
+        toast({
+          title: "Reset link sent",
+          description: `A password reset email has been sent to ${email}.`,
+        })
+      })
+      .catch((error) => {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message,
+        })
+      })
+      .finally(() => setIsUpdating(false))
+  }
+
   const handleDeleteReport = async (reportId: string) => {
     if (!db) return
     const reportRef = doc(db, "reports", reportId)
@@ -444,7 +469,17 @@ export default function AdminPage() {
                                 Remove All Sanctions
                               </Button>
                             ) : (
-                              <p className="text-[10px] text-muted-foreground italic text-center">No active bans. Use reports to apply sanctions.</p>
+                              <div className="space-y-2">
+                                <Button 
+                                  variant="outline" 
+                                  onClick={() => handleResetPassword(userItem)}
+                                  disabled={isUpdating}
+                                  className="w-full h-12 font-headline font-bold uppercase text-[10px] gap-2"
+                                >
+                                  <Mail className="h-4 w-4" /> Send Password Reset
+                                </Button>
+                                <p className="text-[10px] text-muted-foreground italic text-center">No active bans. Use reports to apply sanctions.</p>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -615,7 +650,7 @@ export default function AdminPage() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Target</h4>
+                          <h4 className="text-[10px) font-headline font-bold text-muted-foreground uppercase tracking-widest">Target</h4>
                           <div className="flex flex-col gap-1">
                             <p className="font-medium">{activeReport.targetUsername}</p>
                             {targetProfile && (
