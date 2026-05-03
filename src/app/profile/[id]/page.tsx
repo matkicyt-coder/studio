@@ -102,7 +102,7 @@ export default function ProfilePage() {
   const { data: userDataList, isLoading } = useCollection(userQuery)
   const profileUser = userDataList?.[0]
 
-  // Friend logic
+  // Friend logic (current user context)
   const friendshipsQuery1 = useMemoFirebase(() => {
     if (!db || !user?.uid || !profileUser) return null
     return query(collection(db, "friendships"), where("user1", "==", user.uid), where("user2", "==", profileUser.id))
@@ -128,6 +128,32 @@ export default function ProfilePage() {
   const { data: tf2 } = useCollection(totalFriendsQuery2)
   const totalFriendsCount = (tf1?.length || 0) + (tf2?.length || 0)
 
+  // Fetch friends of the profile user
+  const profileFriendshipsQuery1 = useMemoFirebase(() => {
+    if (!db || !profileUser) return null
+    return query(collection(db, "friendships"), where("user1", "==", profileUser.id), where("status", "==", "accepted"))
+  }, [db, profileUser])
+  const profileFriendshipsQuery2 = useMemoFirebase(() => {
+    if (!db || !profileUser) return null
+    return query(collection(db, "friendships"), where("user2", "==", profileUser.id), where("status", "==", "accepted"))
+  }, [db, profileUser])
+  
+  const { data: pf1 } = useCollection(profileFriendshipsQuery1)
+  const { data: pf2 } = useCollection(profileFriendshipsQuery2)
+  
+  const profileFriendIds = useMemo(() => {
+    const ids1 = (pf1 || []).map(f => f.user1 === profileUser?.id ? f.user2 : f.user1)
+    const ids2 = (pf2 || []).map(f => f.user1 === profileUser?.id ? f.user2 : f.user1)
+    return [...ids1, ...ids2]
+  }, [pf1, pf2, profileUser?.id])
+
+  const profileFriendsDataQuery = useMemoFirebase(() => {
+    if (!db || profileFriendIds.length === 0) return null
+    return query(collection(db, "users"), where("id", "in", profileFriendIds))
+  }, [db, profileFriendIds])
+  
+  const { data: profileFriends, isLoading: isProfileFriendsLoading } = useCollection(profileFriendsDataQuery)
+
   useEffect(() => {
     if (profileUser) {
       setNewDescription(profileUser.description || "")
@@ -140,7 +166,7 @@ export default function ProfilePage() {
     const userRef = doc(db, "users", profileUser.id)
     updateDoc(userRef, { description: newDescription })
       .then(() => {
-        toast({ title: "DESCRIPTION UPDATED" })
+        toast({ title: "Description updated" })
         setIsEditingDescription(false)
       })
       .catch(error => {
@@ -173,8 +199,8 @@ export default function ProfilePage() {
     addDoc(reportsRef, reportData)
       .then(() => {
         toast({
-          title: "REPORT SUBMITTED",
-          description: "THE MODERATION TERMINAL HAS RECEIVED YOUR REPORT."
+          title: "Report submitted",
+          description: "The moderation team has received your report."
         })
         setIsReportDialogOpen(false)
         setReportReason("")
@@ -194,7 +220,7 @@ export default function ProfilePage() {
     
     if (action === 'add') {
       if (totalFriendsCount >= 20) {
-        toast({ variant: "destructive", title: "LIMIT REACHED", description: "YOU CAN ONLY HAVE 20 FRIENDS." })
+        toast({ variant: "destructive", title: "Limit reached", description: "You can only have 20 friends." })
         return
       }
       addDoc(collection(db, "friendships"), {
@@ -205,7 +231,7 @@ export default function ProfilePage() {
         bestFriendOf: [],
         createdAt: new Date().toISOString()
       })
-      toast({ title: "REQUEST SENT" })
+      toast({ title: "Request sent" })
     } else if (action === 'accept') {
       if (friendship) {
         updateDoc(doc(db, "friendships", friendship.id), {
@@ -213,19 +239,18 @@ export default function ProfilePage() {
           createdAt: new Date().toISOString()
         })
         
-        // Grant friendship badge if they don't have it
         if (currentUserData && !currentUserData.badges?.includes("friendship")) {
           updateDoc(doc(db, "users", user.uid), {
             badges: arrayUnion("friendship")
           })
         }
 
-        toast({ title: "REQUEST ACCEPTED" })
+        toast({ title: "Request accepted" })
       }
     } else if (action === 'remove' || action === 'decline' || action === 'cancel') {
       if (friendship) {
         deleteDoc(doc(db, "friendships", friendship.id))
-        toast({ title: action === 'remove' ? "FRIEND REMOVED" : "REQUEST CLEARED" })
+        toast({ title: action === 'remove' ? "Friend removed" : "Request cleared" })
       }
     }
   }
@@ -243,9 +268,9 @@ export default function ProfilePage() {
       <NavigationBar />
       <div className="max-w-xl mx-auto text-center space-y-6">
         <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto" />
-        <h1 className="text-2xl sm:text-3xl font-headline font-bold uppercase">USER NOT FOUND</h1>
-        <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
-          <ArrowLeft className="h-4 w-4" /> BACK HOME
+        <h1 className="text-2xl sm:text-3xl font-headline font-bold">User not found</h1>
+        <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 font-bold text-xs">
+          <ArrowLeft className="h-4 w-4" /> Back Home
         </Button>
       </div>
     </main>
@@ -257,19 +282,18 @@ export default function ProfilePage() {
       <NavigationBar />
       <div className="max-w-xl mx-auto text-center space-y-6 animate-fade-in">
         <ShieldAlert className="h-16 w-16 text-destructive mx-auto" />
-        <h1 className="text-2xl sm:text-3xl font-headline font-bold uppercase tracking-tighter">ACCOUNT TERMINATED</h1>
-        <p className="text-muted-foreground font-body text-sm sm:text-base">THIS PROFILE IS NO LONGER AVAILABLE DUE TO A VIOLATION OF THE TERMS OF SERVICE.</p>
-        <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
-          <ArrowLeft className="h-4 w-4" /> BACK HOME
+        <h1 className="text-2xl sm:text-3xl font-headline font-bold tracking-tighter">Account Terminated</h1>
+        <p className="text-muted-foreground font-body text-sm sm:text-base">This profile is no longer available due to a violation of the Terms of Service.</p>
+        <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 font-bold text-xs">
+          <ArrowLeft className="h-4 w-4" /> Back Home
         </Button>
       </div>
     </main>
   )
 
   const isOwnProfile = user?.uid === profileUser.id
-  const joinDate = profileUser.createdAt ? new Date(profileUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "RECENTLY"
+  const joinDate = profileUser.createdAt ? new Date(profileUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Recently"
 
-  // Relationship status
   const isAccepted = friendship?.status === 'accepted'
   const isPending = friendship?.status === 'pending'
   const wasSentByMe = friendship?.requestSentBy === user?.uid
@@ -286,38 +310,38 @@ export default function ProfilePage() {
                 <Button 
                   onClick={() => handleActionFriend('remove')} 
                   variant="outline"
-                  className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
+                  className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6"
                 >
                   <UserMinus className="h-4 w-4" />
-                  REMOVE FRIEND
+                  Remove Friend
                 </Button>
               ) : isPending ? (
                 wasSentByMe ? (
                   <Button 
                     onClick={() => handleActionFriend('cancel')} 
                     variant="secondary"
-                    className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
+                    className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6"
                   >
                     <UserX className="h-4 w-4" />
-                    CANCEL REQUEST
+                    Cancel Request
                   </Button>
                 ) : (
                   <>
                     <Button 
                       onClick={() => handleActionFriend('accept')} 
                       variant="default"
-                      className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
+                      className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6"
                     >
                       <UserCheck className="h-4 w-4" />
-                      ACCEPT
+                      Accept
                     </Button>
                     <Button 
                       onClick={() => handleActionFriend('decline')} 
                       variant="outline"
-                      className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6 text-destructive"
+                      className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6 text-destructive"
                     >
                       <X className="h-4 w-4" />
-                      DECLINE
+                      Decline
                     </Button>
                   </>
                 )
@@ -325,10 +349,10 @@ export default function ProfilePage() {
                 <Button 
                   onClick={() => handleActionFriend('add')} 
                   variant="default"
-                  className="font-headline font-bold uppercase text-xs gap-2 rounded-full h-10 px-6"
+                  className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6"
                 >
                   <UserPlus className="h-4 w-4" />
-                  ADD FRIEND
+                  Add Friend
                 </Button>
               )}
             </div>
@@ -348,7 +372,7 @@ export default function ProfilePage() {
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 truncate">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter uppercase flex items-center gap-2 truncate">
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter flex items-center gap-2 truncate">
                     {profileUser.username}
                   </h1>
                   {profileUser.isPremium && <PremiumBadge className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />}
@@ -361,6 +385,7 @@ export default function ProfilePage() {
 
           <div className="space-y-10 pt-4">
             <div className="space-y-6">
+              {/* Description */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Description</h3>
@@ -368,18 +393,39 @@ export default function ProfilePage() {
                 </div>
                 {isEditingDescription ? (
                   <div className="space-y-3">
-                    <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="WRITE SOMETHING..." className="min-h-[100px] bg-card border-primary/20 text-sm w-full" />
+                    <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Write something..." className="min-h-[100px] bg-card border-primary/20 text-sm w-full" />
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={handleUpdateDescription} disabled={isSavingDescription} className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none">{isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}SAVE</Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setIsEditingDescription(false); setNewDescription(profileUser.description || ""); }} className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none"><X className="h-3 w-3 mr-1" />CANCEL</Button>
+                      <Button size="sm" onClick={handleUpdateDescription} disabled={isSavingDescription} className="font-headline font-bold text-xs flex-1 sm:flex-none">{isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setIsEditingDescription(false); setNewDescription(profileUser.description || ""); }} className="font-headline font-bold text-xs flex-1 sm:flex-none"><X className="h-3 w-3 mr-1" />Cancel</Button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-base sm:text-lg text-foreground/80 leading-relaxed font-body whitespace-pre-wrap break-words w-full">{profileUser.description || "NO DESCRIPTION SET."}</p>
+                  <p className="text-base sm:text-lg text-foreground/80 leading-relaxed font-body whitespace-pre-wrap break-words w-full">{profileUser.description || "No description set."}</p>
                 )}
               </div>
 
-              {/* Badges Section - Now UNDER Description */}
+              {/* Friends Section */}
+              <div className="space-y-3 pt-2">
+                <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Friends</h3>
+                <div className="flex flex-wrap gap-3">
+                  {profileFriends?.map(friend => (
+                    <Link key={friend.id} href={`/profile/${friend.sequentialId}`}>
+                      <div className="flex items-center gap-2 p-2 rounded-xl bg-card border border-border hover:border-primary/50 transition-all group max-w-[200px]">
+                        <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+                          <User className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                        </div>
+                        <span className="text-xs font-medium truncate group-hover:text-primary">{friend.username}</span>
+                      </div>
+                    </Link>
+                  ))}
+                  {(!profileFriends || profileFriends.length === 0) && !isProfileFriendsLoading && (
+                    <span className="text-[10px] text-muted-foreground/40 italic">No connections found.</span>
+                  )}
+                  {isProfileFriendsLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+              </div>
+
+              {/* Badges Section */}
               <div className="flex flex-col items-start gap-3 pt-2">
                 <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Achievements</h3>
                 <div className="flex flex-wrap gap-2 justify-start">
@@ -390,7 +436,7 @@ export default function ProfilePage() {
                       <Link key={badgeId} href="/badges">
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all cursor-pointer shadow-sm group">
                           <badge.icon className={cn("h-3.5 w-3.5", badge.color)} />
-                          <span className="text-[9px] font-headline font-bold uppercase tracking-tight group-hover:text-primary">{badge.name}</span>
+                          <span className="text-[9px] font-headline font-bold group-hover:text-primary">{badge.name}</span>
                         </div>
                       </Link>
                     )
@@ -415,23 +461,23 @@ export default function ProfilePage() {
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-8 border-t border-border/30 gap-6">
               <div className="flex flex-col items-start gap-1">
-                <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">JOINED SINCE</span>
+                <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">Joined Since</span>
                 <div className="flex items-center gap-1.5 text-foreground/60"><Clock className="h-3 w-3" /><span className="text-sm font-medium">{joinDate}</span></div>
               </div>
 
               {!isOwnProfile && (
                 <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive gap-2 font-headline text-[10px] font-bold uppercase tracking-widest h-auto p-0 group"><Flag className="h-3 w-3 group-hover:fill-destructive" /> REPORT PROFILE</Button>
+                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive gap-2 font-headline text-[10px] font-bold h-auto p-0 group"><Flag className="h-3 w-3 group-hover:fill-destructive" /> Report Profile</Button>
                   </DialogTrigger>
                   <DialogContent className="bg-background border-border w-[95vw] rounded-3xl sm:max-w-[425px]">
-                    <DialogHeader><DialogTitle className="font-headline font-bold text-2xl uppercase">REPORT PROFILE</DialogTitle><DialogDescription>EXPLAIN WHY THIS PROFILE VIOLATES TERMINAL STANDARDS.</DialogDescription></DialogHeader>
+                    <DialogHeader><DialogTitle className="font-headline font-bold text-2xl">Report Profile</DialogTitle><DialogDescription>Explain why this profile violates standards.</DialogDescription></DialogHeader>
                     <div className="py-6 space-y-4">
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">PART OF PROFILE</label><Select value={reportTarget} onValueChange={(val: any) => setReportTarget(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="SELECT TARGET" /></SelectTrigger><SelectContent><SelectItem value="username">USERNAME</SelectItem><SelectItem value="description">DESCRIPTION</SelectItem></SelectContent></Select></div>
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">VIOLATION CATEGORY</label><Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="SELECT CATEGORY" /></SelectTrigger><SelectContent><SelectItem value="sexual">SEXUAL CONTENT</SelectItem><SelectItem value="inappropriate">INAPPROPRIATE BEHAVIOR</SelectItem><SelectItem value="other">OTHER</SelectItem></SelectContent></Select></div>
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">DETAILS</label><Textarea placeholder="DESCRIBE THE ISSUE..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="min-h-[120px] bg-muted/20 text-sm" /></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Part of profile</label><Select value={reportTarget} onValueChange={(val: any) => setReportTarget(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="Select target" /></SelectTrigger><SelectContent><SelectItem value="username">Username</SelectItem><SelectItem value="description">Description</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Violation category</label><Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent><SelectItem value="sexual">Sexual Content</SelectItem><SelectItem value="inappropriate">Inappropriate Behavior</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Details</label><Textarea placeholder="Describe the issue..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="min-h-[120px] bg-muted/20 text-sm" /></div>
                     </div>
-                    <DialogFooter><Button onClick={handleReport} disabled={isReporting || !reportReason || !currentUserData} variant="destructive" className="w-full h-12 font-headline font-bold uppercase text-xs">{isReporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "SUBMIT REPORT"}</Button></DialogFooter>
+                    <DialogFooter><Button onClick={handleReport} disabled={isReporting || !reportReason || !currentUserData} variant="destructive" className="w-full h-12 font-headline font-bold text-xs">{isReporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Report"}</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               )}
