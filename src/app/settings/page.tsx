@@ -9,7 +9,7 @@ import { doc, updateDoc, increment } from "firebase/firestore"
 import { updatePassword, signOut } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, LogOut, Loader2, Lock, User } from "lucide-react"
+import { Pencil, LogOut, Loader2, Lock, User, ShieldAlert } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
+import Link from "next/link"
 
 export default function SettingsPage() {
   const { user, isUserLoading } = useUser()
@@ -228,6 +229,21 @@ export default function SettingsPage() {
               </DialogContent>
             </Dialog>
           </div>
+
+          {/* Admin Panel Button */}
+          {userData?.isAdmin && (
+            <div className="pt-4 border-t border-white/5">
+              <Link href="/admin">
+                <Button 
+                  variant="outline" 
+                  className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white font-headline font-bold gap-2"
+                >
+                  <ShieldAlert className="h-5 w-5 text-red-500" />
+                  Admin Panel
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="pt-12">
