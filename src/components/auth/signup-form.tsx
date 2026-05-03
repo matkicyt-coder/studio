@@ -31,7 +31,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth, useFirestore } from "@/firebase"
 import { createUserWithEmailAndPassword } from "firebase/auth"
-import { doc, setDoc, runTransaction } from "firebase/firestore"
+import { doc, setDoc, runTransaction, collection, query, where, limit, getDocs, addDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 
 const signupSchema = z.object({
@@ -101,6 +101,26 @@ export function SignupForm() {
 
       const userDocRef = doc(db, "users", user.uid)
       await setDoc(userDocRef, userData)
+
+      // Auto-friend User ID 2 (Welcome Friend)
+      if (sequentialId > 2) {
+        const user2Query = query(collection(db, "users"), where("sequentialId", "==", 2), limit(1))
+        const user2Snapshot = await getDocs(user2Query)
+        
+        if (!user2Snapshot.empty) {
+          const user2Doc = user2Snapshot.docs[0]
+          const user2Id = user2Doc.id
+          
+          await addDoc(collection(db, "friendships"), {
+            user1: user.uid < user2Id ? user.uid : user2Id,
+            user2: user.uid < user2Id ? user2Id : user.uid,
+            status: 'accepted',
+            requestSentBy: user2Id,
+            bestFriendOf: [],
+            createdAt: new Date().toISOString()
+          })
+        }
+      }
 
       router.push("/home")
     } catch (error: any) {
