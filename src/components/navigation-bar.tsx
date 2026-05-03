@@ -89,34 +89,34 @@ export function NavigationBar() {
   const coinBalance = userData?.coins ?? 0
 
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border/50 bg-[#f4f4f5] dark:bg-black z-50 px-6 flex items-center shadow-sm">
-      <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
+    <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border/50 bg-[#f4f4f5] dark:bg-black z-50 px-4 sm:px-6 flex items-center shadow-sm">
+      <div className="flex items-center justify-between w-full max-w-7xl mx-auto gap-2">
         <Link 
           href="/home" 
-          className="p-2 rounded-full hover:bg-accent transition-colors"
+          className="p-2 rounded-full hover:bg-accent transition-colors shrink-0"
         >
           <Home className="h-6 w-6" />
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-end">
           {/* User Search Bar */}
-          <div className="relative" ref={searchRef}>
+          <div className="relative flex-1 max-w-[320px]" ref={searchRef}>
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
-                placeholder="Search users..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value)
                   setIsSearchOpen(true)
                 }}
                 onFocus={() => setIsSearchOpen(true)}
-                className="w-[180px] sm:w-[240px] pl-9 h-10 bg-card/50 border-border/50 rounded-full text-sm transition-all focus:w-[220px] sm:focus:w-[320px]"
+                className="w-full pl-9 h-10 bg-card/50 border-border/50 rounded-full text-sm transition-all"
               />
             </div>
             
             {isSearchOpen && filteredUsers && filteredUsers.length > 0 && (
-              <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-2xl shadow-xl overflow-hidden animate-fade-in z-50">
+              <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-2xl shadow-xl overflow-hidden animate-fade-in z-50 min-w-[240px]">
                 <div className="py-2">
                   {filteredUsers.map((u) => {
                     const isPermBanned = u.isBanned && u.banType === 'perm'
@@ -130,18 +130,18 @@ export function NavigationBar() {
                         }}
                         className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors text-left"
                       >
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <User className="h-4 w-4 text-muted-foreground shrink-0" />
                           <span className={cn(
-                            "font-medium text-sm flex items-center gap-1.5",
+                            "font-medium text-sm flex items-center gap-1.5 truncate",
                             isPermBanned && "text-muted-foreground italic line-through"
                           )}>
                             {isPermBanned ? "CONTENT DELETED" : u.username}
-                            {!isPermBanned && u.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-primary fill-primary/10" />}
-                            {!isPermBanned && u.isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
+                            {!isPermBanned && u.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-primary fill-primary/10 shrink-0" />}
+                            {!isPermBanned && u.isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />}
                           </span>
                         </div>
-                        <span className="text-[10px] font-headline text-muted-foreground">#{u.sequentialId}</span>
+                        <span className="text-[10px] font-headline text-muted-foreground shrink-0 ml-2">#{u.sequentialId}</span>
                       </button>
                     )
                   })}
@@ -152,33 +152,33 @@ export function NavigationBar() {
 
           <Dialog>
             <DialogTrigger asChild>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border hover:bg-accent transition-all font-bold shadow-sm">
+              <button className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-card border border-border hover:bg-accent transition-all font-bold shadow-sm shrink-0">
                 <Coins className="h-4 w-4 text-primary" />
-                <span className="font-headline">{formatCurrency(coinBalance)}</span>
+                <span className="font-headline text-xs sm:text-sm">{formatCurrency(coinBalance)}</span>
               </button>
             </DialogTrigger>
-            <DialogContent className="bg-background border-border sm:max-w-[425px]">
+            <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-headline font-bold">Buy coins</DialogTitle>
                 <DialogDescription>
                   Collect free digital currency to unlock premium features.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-3 py-4">
                 {[
                   { amount: 100, label: "100" },
                   { amount: 500, label: "500" },
                   { amount: 1000, label: "1000" },
                   { amount: 5000, label: "5000" },
                 ].map((tier) => (
-                  <div key={tier.amount} className="flex items-center justify-between p-4 rounded-xl bg-accent/20 border border-border">
+                  <div key={tier.amount} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-accent/20 border border-border">
                     <div className="flex items-center gap-3">
                       <Coins className="h-5 w-5 text-primary" />
-                      <span className="font-bold text-lg font-headline">{tier.label} Coins</span>
+                      <span className="font-bold text-base sm:text-lg font-headline">{tier.label} Coins</span>
                     </div>
                     <Button 
                       onClick={() => handleBuy(tier.amount)}
-                      className="font-bold font-headline"
+                      className="font-bold font-headline h-9 sm:h-10"
                     >
                       $0.00
                     </Button>
@@ -190,7 +190,7 @@ export function NavigationBar() {
 
           <Link 
             href="/settings" 
-            className="p-2 rounded-full hover:bg-accent transition-colors"
+            className="p-2 rounded-full hover:bg-accent transition-colors shrink-0"
           >
             <Settings className="h-6 w-6" />
           </Link>

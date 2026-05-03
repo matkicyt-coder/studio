@@ -162,7 +162,7 @@ export default function ProfilePage() {
         <NavigationBar />
         <div className="max-w-xl mx-auto text-center space-y-6">
           <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto" />
-          <h1 className="text-3xl font-headline font-bold uppercase">User Not Found</h1>
+          <h1 className="text-2xl sm:text-3xl font-headline font-bold uppercase">User Not Found</h1>
           <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
             <ArrowLeft className="h-4 w-4" /> Back Home
           </Button>
@@ -179,8 +179,8 @@ export default function ProfilePage() {
         <NavigationBar />
         <div className="max-w-xl mx-auto text-center space-y-6 animate-fade-in">
           <ShieldAlert className="h-16 w-16 text-destructive mx-auto" />
-          <h1 className="text-3xl font-headline font-bold uppercase tracking-tighter">Account Terminated</h1>
-          <p className="text-muted-foreground font-body">
+          <h1 className="text-2xl sm:text-3xl font-headline font-bold uppercase tracking-tighter">Account Terminated</h1>
+          <p className="text-muted-foreground font-body text-sm sm:text-base">
             This profile is no longer available due to a permanent violation of the Terms of Service.
           </p>
           <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
@@ -200,7 +200,7 @@ export default function ProfilePage() {
     : "Recently"
 
   return (
-    <main className="min-h-screen bg-background w-full pt-24 pb-20 px-6">
+    <main className="min-h-screen bg-background w-full pt-24 pb-20 px-4 sm:px-6">
       <NavigationBar />
       
       <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
@@ -209,7 +209,7 @@ export default function ProfilePage() {
             onClick={() => router.back()} 
             variant="ghost" 
             size="icon" 
-            className="rounded-full hover:bg-accent"
+            className="rounded-full hover:bg-accent shrink-0"
           >
             <ArrowLeft className="h-6 w-6" />
           </Button>
@@ -217,26 +217,26 @@ export default function ProfilePage() {
 
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center border-2 border-primary/20">
-              <User className="h-8 w-8 text-primary" />
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center border-2 border-primary/20 shrink-0">
+              <User className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase flex items-center gap-2">
+                <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter uppercase flex items-center gap-2 truncate">
                   {profileUser.username}
                   {profileUser.isVerified && (
-                    <CheckCircle2 className="h-6 w-6 text-primary fill-primary/10" />
+                    <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary fill-primary/10 shrink-0" />
                   )}
                 </h1>
                 {profileUser.isAdmin && (
-                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
                 )}
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-            <div className="space-y-8">
+            <div className="space-y-8 order-2 md:order-1">
               {/* Description Section */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -245,7 +245,7 @@ export default function ProfilePage() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-6 w-6 rounded-full"
+                      className="h-6 w-6 rounded-full shrink-0"
                       onClick={() => setIsEditingDescription(true)}
                     >
                       <Pencil className="h-3 w-3" />
@@ -259,14 +259,14 @@ export default function ProfilePage() {
                       value={newDescription}
                       onChange={(e) => setNewDescription(e.target.value)}
                       placeholder="Write something about yourself..."
-                      className="min-h-[100px] bg-card border-primary/20"
+                      className="min-h-[100px] bg-card border-primary/20 text-sm"
                     />
                     <div className="flex gap-2">
                       <Button 
                         size="sm" 
                         onClick={handleUpdateDescription}
                         disabled={isSavingDescription}
-                        className="font-headline font-bold text-xs uppercase"
+                        className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none"
                       >
                         {isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
                         Save
@@ -278,7 +278,7 @@ export default function ProfilePage() {
                           setIsEditingDescription(false)
                           setNewDescription(profileUser.description || "")
                         }}
-                        className="font-headline font-bold text-xs uppercase"
+                        className="font-headline font-bold text-xs uppercase flex-1 sm:flex-none"
                       >
                         <X className="h-3 w-3 mr-1" />
                         Cancel
@@ -286,7 +286,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-lg text-foreground/80 leading-relaxed font-body whitespace-pre-wrap">
+                  <p className="text-base sm:text-lg text-foreground/80 leading-relaxed font-body whitespace-pre-wrap break-words">
                     {profileUser.description || "No description set."}
                   </p>
                 )}
@@ -307,7 +307,7 @@ export default function ProfilePage() {
               )}
             </div>
 
-            <div className="flex flex-col items-end gap-6 md:pt-4">
+            <div className="flex flex-col items-start md:items-end gap-6 md:pt-4 order-1 md:order-2">
               {/* Metadata and Actions Section */}
               {!isOwnProfile && (
                 <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
@@ -316,7 +316,7 @@ export default function ProfilePage() {
                       <Flag className="h-3 w-3 group-hover:fill-destructive" /> Report Profile
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-background border-border">
+                  <DialogContent className="bg-background border-border w-[95vw] rounded-3xl sm:max-w-[425px]">
                     <DialogHeader>
                       <DialogTitle className="font-headline font-bold text-2xl uppercase">Report Profile</DialogTitle>
                       <DialogDescription>
@@ -357,7 +357,7 @@ export default function ProfilePage() {
                           placeholder="Describe the issue in detail..."
                           value={reportReason}
                           onChange={(e) => setReportReason(e.target.value)}
-                          className="min-h-[120px] bg-muted/20"
+                          className="min-h-[120px] bg-muted/20 text-sm"
                         />
                       </div>
                     </div>
@@ -375,7 +375,7 @@ export default function ProfilePage() {
                 </Dialog>
               )}
 
-              <div className="flex flex-col items-end">
+              <div className="flex flex-col items-start md:items-end">
                 <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">Joined Since</span>
                 <div className="flex items-center gap-1.5 text-foreground/60">
                   <Clock className="h-3 w-3" />
