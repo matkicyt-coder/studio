@@ -12,19 +12,15 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (
-        request.auth.uid == userId || 
-        isAdmin() || 
-        resource.data.sequentialId == 1
-      );
-      
-      allow list: if isSignedIn() && (
-        isAdmin() ||
-        (request.query.limit <= 10 && resource.data.sequentialId == 1)
-      );
-      
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn();
+      allow read, list, delete: if isAdmin();
     }
 
     match /counters/{counterId} {

@@ -53,6 +53,21 @@
         "createdAt"
       ]
     },
+    "Report": {
+      "title": "Report",
+      "type": "object",
+      "description": "A report filed against a user.",
+      "properties": {
+        "id": { "type": "string" },
+        "reporterId": { "type": "string" },
+        "reporterUsername": { "type": "string" },
+        "targetUserId": { "type": "string" },
+        "targetUsername": { "type": "string" },
+        "reason": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reporterId", "targetUserId", "reason", "createdAt"]
+    },
     "Counter": {
       "title": "Counter",
       "type": "object",
@@ -70,6 +85,10 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/backend/entities/User" },
       "description": "User profile data."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/backend/entities/Report" },
+      "description": "User misconduct reports."
     },
     "/counters/{counterId}": {
       "schema": { "$ref": "#/backend/entities/Counter" },

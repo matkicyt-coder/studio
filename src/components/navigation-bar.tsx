@@ -1,12 +1,13 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { Settings, Coins, Home } from "lucide-react"
-import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
-import { doc, updateDoc, increment } from "firebase/firestore"
-import { formatCurrency } from "@/lib/utils"
+import { useRouter } from "next/navigation"
+import { Settings, Coins, Home, Search, ShieldCheck, User } from "lucide-react"
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
+import { doc, updateDoc, increment, collection, query, limit } from "firebase/firestore"
+import { formatCurrency, cn } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -23,7 +25,12 @@ import { FirestorePermissionError } from "@/firebase/errors"
 export function NavigationBar() {
   const { user } = useUser()
   const db = useFirestore()
+  const router = useRouter()
   const { toast } = useToast()
+  
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
@@ -31,6 +38,30 @@ export function NavigationBar() {
   }, [db, user?.uid])
 
   const { data: userData } = useDoc(userDocRef)
+
+  // Memoize users for search
+  const usersRef = useMemoFirebase(() => {
+    if (!db) return null
+    return query(collection(db, "users"), limit(100))
+  }, [db])
+  
+  const { data: allUsers } = useCollection(usersRef)
+
+  const filteredUsers = searchQuery.trim().length > 0 
+    ? allUsers?.filter(u => 
+        u.username?.toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 5)
+    : []
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   const handleBuy = (amount: number) => {
     if (!userDocRef) return
@@ -68,6 +99,48 @@ export function NavigationBar() {
         </Link>
 
         <div className="flex items-center gap-4">
+          {/* User Search Bar */}
+          <div className="relative" ref={searchRef}>
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              <Input
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setIsSearchOpen(true)
+                }}
+                onFocus={() => setIsSearchOpen(true)}
+                className="w-[180px] sm:w-[240px] pl-9 h-10 bg-card/50 border-border/50 rounded-full text-sm transition-all focus:w-[220px] sm:focus:w-[320px]"
+              />
+            </div>
+            
+            {isSearchOpen && filteredUsers && filteredUsers.length > 0 && (
+              <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-2xl shadow-xl overflow-hidden animate-fade-in z-50">
+                <div className="py-2">
+                  {filteredUsers.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => {
+                        router.push(`/profile/${u.sequentialId}`)
+                        setIsSearchOpen(false)
+                        setSearchQuery("")
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">{u.username}</span>
+                        {u.isAdmin && <ShieldCheck className="h-3 w-3 text-primary" />}
+                      </div>
+                      <span className="text-[10px] font-headline text-muted-foreground">#{u.sequentialId}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <Dialog>
             <DialogTrigger asChild>
               <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border hover:bg-accent transition-all font-bold shadow-sm">
