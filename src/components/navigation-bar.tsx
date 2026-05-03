@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
-import { Settings, Coins, Home, Search, ShieldCheck, User, LogOut, Crown, Plus } from "lucide-react"
+import { Settings, Coins, Home, Search, ShieldCheck, User, LogOut, Crown, Plus, ShoppingBag } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
 import { doc, updateDoc, increment, collection, query, limit } from "firebase/firestore"
 import { signOut } from "firebase/auth"
@@ -41,6 +41,7 @@ export function NavigationBar() {
   
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isShopOpen, setIsShopOpen] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
 
   const userDocRef = useMemoFirebase(() => {
@@ -172,7 +173,7 @@ export function NavigationBar() {
               )}
             </div>
 
-            <Dialog>
+            <Dialog open={isShopOpen} onOpenChange={setIsShopOpen}>
               <DialogTrigger asChild>
                 <button className={cn(
                   "flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border border-border transition-all font-bold shadow-sm shrink-0 hover:bg-accent",
@@ -184,9 +185,9 @@ export function NavigationBar() {
               </DialogTrigger>
               <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Buy Coins</DialogTitle>
+                  <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Portal Shop</DialogTitle>
                   <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {isParentalMode ? "Purchases restricted in Parental Mode." : "Enhance your digital experience."}
+                    {isParentalMode ? "Purchases restricted in Parental Mode." : "Manage your coins and membership."}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-3 py-4">
@@ -199,11 +200,25 @@ export function NavigationBar() {
                       <Button onClick={() => handleBuy(amount)} disabled={isParentalMode} size="sm" className="font-bold font-headline uppercase text-xs">$0.00</Button>
                     </div>
                   ))}
-                  {!userData?.isPremium && (
-                    <Button onClick={() => router.push("/premium")} className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-headline font-bold uppercase tracking-tighter gap-2 rounded-xl mt-2">
-                      <Crown className="h-5 w-5" /> Become Premium
+                  
+                  <div className="pt-4 border-t border-border mt-2">
+                    <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest mb-3 text-center">Membership</p>
+                    <Button 
+                      onClick={() => {
+                        setIsShopOpen(false);
+                        router.push("/premium");
+                      }} 
+                      className={cn(
+                        "w-full h-14 font-headline font-bold uppercase tracking-tighter gap-2 rounded-xl shadow-lg transition-all active:scale-95",
+                        userData?.isPremium 
+                          ? "bg-secondary text-secondary-foreground" 
+                          : "bg-amber-500 hover:bg-amber-600 text-white"
+                      )}
+                    >
+                      <Crown className="h-5 w-5" /> 
+                      {userData?.isPremium ? "Premium Dashboard" : "Become Premium"}
                     </Button>
-                  )}
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -233,6 +248,13 @@ export function NavigationBar() {
           <Home className="h-5 w-5" />
           <span className="text-[9px] font-headline font-bold uppercase tracking-widest">Home</span>
         </Link>
+        <button 
+          onClick={() => setIsShopOpen(true)}
+          className={cn("flex flex-col items-center gap-1 p-2 rounded-xl transition-all", isShopOpen ? "text-primary" : "text-muted-foreground")}
+        >
+          <ShoppingBag className="h-5 w-5" />
+          <span className="text-[9px] font-headline font-bold uppercase tracking-widest">Shop</span>
+        </button>
         <Link href="/friends" className={cn("flex flex-col items-center gap-1 p-2 rounded-xl transition-all", pathname === '/friends' ? "text-primary" : "text-muted-foreground")}>
           <Plus className="h-5 w-5" />
           <span className="text-[9px] font-headline font-bold uppercase tracking-widest">Social</span>

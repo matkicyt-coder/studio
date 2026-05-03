@@ -8,6 +8,7 @@ import { BanGate } from '@/components/auth/ban-gate';
 export const metadata: Metadata = {
   title: 'Digital Portal',
   description: 'Access your personal digital terminal.',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
