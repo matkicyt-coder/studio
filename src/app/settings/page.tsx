@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useUser } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
 
-export default function HomePage() {
+export default function SettingsPage() {
   const { user, isUserLoading } = useUser()
   const router = useRouter()
 
@@ -23,7 +23,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-black w-full pt-16">
       <NavigationBar />
       <div className="p-6 text-white font-headline">
-        {/* Page content will go here */}
+        {/* Settings content will go here */}
       </div>
     </main>
   )
