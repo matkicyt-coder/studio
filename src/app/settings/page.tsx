@@ -176,6 +176,7 @@ export default function SettingsPage() {
     setIsUpdating(true)
     
     try {
+      // Re-initialize recaptcha
       const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible'
       })
@@ -235,7 +236,7 @@ export default function SettingsPage() {
       
       toast({
         title: "Verification sent",
-        description: `A verification link has been sent to ${newEmail}. Please click it to verify.`,
+        description: `A real verification link has been sent to ${newEmail}. Check your inbox!`,
       })
       setIsEmailDialogOpen(false)
     } catch (error: any) {
@@ -410,7 +411,7 @@ export default function SettingsPage() {
                   <DialogHeader>
                     <DialogTitle className="font-headline font-bold text-xl uppercase">Link email</DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
-                      We'll send a verification link to your email.
+                      We'll send a real verification link to your inbox.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4">
@@ -431,7 +432,7 @@ export default function SettingsPage() {
                       disabled={isUpdating || !newEmail}
                       className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
                     >
-                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send link"}
+                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send verification link"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -463,7 +464,7 @@ export default function SettingsPage() {
                     </DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                       {phoneStep === 'input' 
-                        ? "Link your phone for secure logins." 
+                        ? "Enter your number to receive a real SMS code." 
                         : `Enter the code sent to ${newPhone}.`}
                     </DialogDescription>
                   </DialogHeader>
