@@ -78,6 +78,15 @@ export function NavigationBar() {
   const handleBuy = (amount: number) => {
     if (!userDocRef) return
 
+    if (isParentalMode) {
+      toast({
+        variant: "destructive",
+        title: "Purchase Restricted",
+        description: "Terminal accounts under 18 are not permitted to process transactions.",
+      })
+      return
+    }
+
     const updateData = {
       coins: increment(amount),
     }
@@ -170,47 +179,46 @@ export function NavigationBar() {
           <Dialog>
             <DialogTrigger asChild>
               <button 
-                disabled={isParentalMode}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-card border border-border transition-all font-bold shadow-sm shrink-0",
-                  isParentalMode ? "opacity-50 cursor-not-allowed bg-muted" : "hover:bg-accent"
+                  "flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-card border border-border transition-all font-bold shadow-sm shrink-0 hover:bg-accent"
                 )}
               >
                 <Coins className="h-4 w-4 text-primary" />
-                <span className="font-headline text-xs sm:text-sm">{isParentalMode ? "RESTRICTED" : formatCurrency(coinBalance)}</span>
+                <span className="font-headline text-xs sm:text-sm">{formatCurrency(coinBalance)}</span>
               </button>
             </DialogTrigger>
-            {!isParentalMode && (
-              <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Buy coins</DialogTitle>
-                  <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
-                    Collect free digital currency to unlock premium features.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-3 py-4">
-                  {[
-                    { amount: 100, label: "100" },
-                    { amount: 500, label: "500" },
-                    { amount: 1000, label: "1000" },
-                    { amount: 5000, label: "5000" },
-                  ].map((tier) => (
-                    <div key={tier.amount} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-accent/20 border border-border">
-                      <div className="flex items-center gap-3">
-                        <Coins className="h-5 w-5 text-primary" />
-                        <span className="font-bold text-base sm:text-lg font-headline">{tier.label} Coins</span>
-                      </div>
-                      <Button 
-                        onClick={() => handleBuy(tier.amount)}
-                        className="font-bold font-headline h-9 sm:h-10 uppercase text-xs"
-                      >
-                        $0.00
-                      </Button>
+            <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Buy coins</DialogTitle>
+                <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
+                  {isParentalMode 
+                    ? "Purchases are restricted while Parental Mode is active." 
+                    : "Collect free digital currency to unlock premium features."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-3 py-4">
+                {[
+                  { amount: 100, label: "100" },
+                  { amount: 500, label: "500" },
+                  { amount: 1000, label: "1000" },
+                  { amount: 5000, label: "5000" },
+                ].map((tier) => (
+                  <div key={tier.amount} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-accent/20 border border-border">
+                    <div className="flex items-center gap-3">
+                      <Coins className="h-5 w-5 text-primary" />
+                      <span className="font-bold text-base sm:text-lg font-headline">{tier.label} Coins</span>
                     </div>
-                  ))}
-                </div>
-              </DialogContent>
-            )}
+                    <Button 
+                      onClick={() => handleBuy(tier.amount)}
+                      disabled={isParentalMode}
+                      className="font-bold font-headline h-9 sm:h-10 uppercase text-xs"
+                    >
+                      $0.00
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </DialogContent>
           </Dialog>
 
           <DropdownMenu>

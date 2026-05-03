@@ -157,6 +157,15 @@ export default function SettingsPage() {
   }
 
   const handleDobUpdateAttempt = () => {
+    if (isParentalMode) {
+      toast({
+        variant: "destructive",
+        title: "Action Restricted",
+        description: "You cannot change your age while Parental Mode is active.",
+      })
+      return
+    }
+
     const newAge = calculateAge(newDob)
     if (newAge < 18) {
       setIsParentalLockConfirmOpen(true)
@@ -298,7 +307,7 @@ export default function SettingsPage() {
           {/* Age Section */}
           <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="space-y-1">
-              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Age Terminal</p>
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Age</p>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-medium">{currentAge} YEARS OLD</h2>
                 {isParentalMode && (
@@ -308,45 +317,45 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
-              <p className="text-[8px] text-muted-foreground font-headline uppercase tracking-widest">Registered DOB: {userData?.dateOfBirth}</p>
             </div>
-            {!isParentalMode && (
-              <Dialog open={isDobDialogOpen} onOpenChange={setIsDobDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-background border-border sm:rounded-3xl">
-                  <DialogHeader>
-                    <DialogTitle className="font-headline font-bold text-xl uppercase">Update Birth Date</DialogTitle>
-                    <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Warning: Setting age under 18 will activate permanent Parental Mode.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4 space-y-4">
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="date"
-                        value={newDob}
-                        onChange={(e) => setNewDob(e.target.value)}
-                        className="pl-10 h-12"
-                      />
-                    </div>
+            <Dialog open={isDobDialogOpen} onOpenChange={setIsDobDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full transition-fluid">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-background border-border sm:rounded-3xl">
+                <DialogHeader>
+                  <DialogTitle className="font-headline font-bold text-xl uppercase">Update Birth Date</DialogTitle>
+                  <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {isParentalMode 
+                      ? "Age changes are locked while Parental Mode is active." 
+                      : "Warning: Setting age under 18 will activate permanent Parental Mode."}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="date"
+                      value={newDob}
+                      onChange={(e) => setNewDob(e.target.value)}
+                      className="pl-10 h-12"
+                      disabled={isParentalMode}
+                    />
                   </div>
-                  <DialogFooter>
-                    <Button 
-                      onClick={handleDobUpdateAttempt} 
-                      disabled={isUpdating || !newDob}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
-                    >
-                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Save"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
+                </div>
+                <DialogFooter>
+                  <Button 
+                    onClick={handleDobUpdateAttempt} 
+                    disabled={isUpdating || !newDob || isParentalMode}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full h-12 font-headline font-bold uppercase text-xs"
+                  >
+                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Save"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Theme Switch Section */}
