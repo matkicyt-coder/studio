@@ -126,13 +126,21 @@ export default function FriendsPage() {
   }
 
   const handleAcceptRequest = async (targetId: string) => {
-    if (!db) return
+    if (!db || !user?.uid) return
     const friendship = pendingIncoming.find(f => f.user1 === targetId || f.user2 === targetId)
     if (friendship) {
       updateDoc(doc(db, "friendships", friendship.id), {
         status: 'accepted',
         createdAt: new Date().toISOString()
       })
+      
+      // Grant friendship badge if they don't have it
+      if (userData && !userData.badges?.includes("friendship")) {
+        updateDoc(doc(db, "users", user.uid), {
+          badges: arrayUnion("friendship")
+        })
+      }
+
       toast({ title: "REQUEST ACCEPTED" })
     }
   }

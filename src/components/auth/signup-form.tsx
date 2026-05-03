@@ -84,6 +84,7 @@ export function SignupForm() {
         return nextId
       })
 
+      const isAdmin = sequentialId === 1
       const userData = {
         id: user.uid,
         username: data.username,
@@ -92,8 +93,9 @@ export function SignupForm() {
         gender: data.gender,
         sequentialId: sequentialId,
         coins: 0,
-        isAdmin: sequentialId === 1,
-        isVerified: sequentialId === 1,
+        isAdmin: isAdmin,
+        isVerified: isAdmin,
+        badges: isAdmin ? ["admin"] : [],
         pastUsernames: [],
         agreedToTerms: data.terms,
         createdAt: new Date().toISOString(),
@@ -118,6 +120,11 @@ export function SignupForm() {
             requestSentBy: user2Id,
             bestFriendOf: [],
             createdAt: new Date().toISOString()
+          })
+          
+          // Grant friendship badge since they now have 1 friend
+          await updateDoc(userDocRef, {
+            badges: arrayUnion("friendship")
           })
         }
       }
