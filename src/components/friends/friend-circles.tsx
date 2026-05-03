@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useMemo } from "react"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where } from "firebase/firestore"
 import { Plus, User, Star, ChevronRight } from "lucide-react"
@@ -25,8 +26,11 @@ export function FriendCircles() {
   const { data: f1 } = useCollection(friendshipsQuery1)
   const { data: f2 } = useCollection(friendshipsQuery2)
 
-  const friendships = [...(f1 || []), ...(f2 || [])]
-  const friendIds = friendships.map(f => f.user1 === user?.uid ? f.user2 : f.user1)
+  const friendships = useMemo(() => [...(f1 || []), ...(f2 || [])], [f1, f2])
+  
+  const friendIds = useMemo(() => 
+    friendships.map(f => f.user1 === user?.uid ? f.user2 : f.user1)
+  , [friendships, user?.uid])
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || friendIds.length === 0) return null
@@ -43,20 +47,22 @@ export function FriendCircles() {
   }
 
   // Sort: Best Friends first, then Online status, then name
-  const sortedFriends = (friendsData || []).sort((a, b) => {
-    const fA = friendships.find(f => f.user1 === a.id || f.user2 === a.id)
-    const fB = friendships.find(f => f.user1 === b.id || f.user2 === b.id)
-    
-    const aBest = fA?.bestFriendOf?.includes(user?.uid) ? 1 : 0
-    const bBest = fB?.bestFriendOf?.includes(user?.uid) ? 1 : 0
-    if (bBest !== aBest) return bBest - aBest
+  const sortedFriends = useMemo(() => {
+    return (friendsData || []).sort((a, b) => {
+      const fA = friendships.find(f => f.user1 === a.id || f.user2 === a.id)
+      const fB = friendships.find(f => f.user1 === b.id || f.user2 === b.id)
+      
+      const aBest = fA?.bestFriendOf?.includes(user?.uid) ? 1 : 0
+      const bBest = fB?.bestFriendOf?.includes(user?.uid) ? 1 : 0
+      if (bBest !== aBest) return bBest - aBest
 
-    const aOnline = isOnline(a.lastSeen) ? 1 : 0
-    const bOnline = isOnline(b.lastSeen) ? 1 : 0
-    if (bOnline !== aOnline) return bOnline - aOnline
+      const aOnline = isOnline(a.lastSeen) ? 1 : 0
+      const bOnline = isOnline(b.lastSeen) ? 1 : 0
+      if (bOnline !== aOnline) return bOnline - aOnline
 
-    return (a.username || "").localeCompare(b.username || "")
-  })
+      return (a.username || "").localeCompare(b.username || "")
+    })
+  }, [friendsData, friendships, user?.uid])
 
   const displayFriends = sortedFriends.slice(0, 5)
 

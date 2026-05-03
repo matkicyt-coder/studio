@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore"
@@ -36,8 +36,11 @@ export default function FriendsPage() {
   const { data: f1 } = useCollection(friendshipsQuery1)
   const { data: f2 } = useCollection(friendshipsQuery2)
 
-  const friendships = [...(f1 || []), ...(f2 || [])]
-  const friendIds = friendships.map(f => f.user1 === user?.uid ? f.user2 : f.user1)
+  const friendships = useMemo(() => [...(f1 || []), ...(f2 || [])], [f1, f2])
+  
+  const friendIds = useMemo(() => 
+    friendships.map(f => f.user1 === user?.uid ? f.user2 : f.user1)
+  , [friendships, user?.uid])
 
   const usersQuery = useMemoFirebase(() => {
     if (!db || friendIds.length === 0) return null
