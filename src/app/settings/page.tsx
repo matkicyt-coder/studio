@@ -451,9 +451,11 @@ export default function SettingsPage() {
                 </DialogTrigger>
                 <DialogContent className="bg-background border-border sm:rounded-3xl">
                   <DialogHeader>
-                    <DialogTitle className="font-headline font-bold text-xl uppercase">Link email</DialogTitle>
+                    <DialogTitle className="font-headline font-bold text-xl uppercase">
+                      {user.email ? "Update email" : "Link email"}
+                    </DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground leading-relaxed">
-                      We'll send a confirmation link to your inbox. Click the link to verify your account.
+                      We'll send an email to confirm your address. Click the link in your inbox to verify.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4">
@@ -506,7 +508,7 @@ export default function SettingsPage() {
                     </DialogTitle>
                     <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground leading-relaxed">
                       {phoneStep === 'input' 
-                        ? "Enter your mobile number to receive a secure verification code via SMS." 
+                        ? "Enter your mobile number to receive a verification code via SMS." 
                         : `Type the 6-digit code sent to ${newPhone}.`}
                     </DialogDescription>
                   </DialogHeader>
