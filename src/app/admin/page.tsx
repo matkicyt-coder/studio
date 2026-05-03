@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -52,11 +53,11 @@ export default function AdminPage() {
   }, [db, user?.uid])
   const { data: userData } = useDoc(userDocRef)
 
-  // Fetch all users
+  // Fetch all users - CRITICAL: only if the user is confirmed as admin to avoid permission errors
   const usersQuery = useMemoFirebase(() => {
-    if (!db) return null
+    if (!db || !userData?.isAdmin) return null
     return query(collection(db, "users"), orderBy("sequentialId", "asc"))
-  }, [db])
+  }, [db, userData?.isAdmin])
   const { data: allUsers, isLoading: isUsersLoading } = useCollection(usersQuery)
 
   useEffect(() => {
@@ -72,12 +73,16 @@ export default function AdminPage() {
     }
   }, [userData, router])
 
-  if (isUserLoading || isUsersLoading || !userData?.isAdmin) {
+  if (isUserLoading || !userData || (userData.isAdmin && isUsersLoading)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     )
+  }
+
+  if (!userData.isAdmin) {
+    return null
   }
 
   const filteredUsers = allUsers?.filter(u => 

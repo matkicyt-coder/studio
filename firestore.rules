@@ -7,11 +7,19 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Allow users to read their own profile, or admins to read any profile.
+      // Also allow public-ish read if the user is the system administrator (User #1) for messaging identification.
+      allow read: if isSignedIn() && (
+        request.auth.uid == userId || 
+        isAdmin() || 
+        resource.data.sequentialId == 1
+      );
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
@@ -21,7 +29,19 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      allow read: if isSignedIn() && (resource.data.receiverId == request.auth.uid || resource.data.senderId == request.auth.uid || isAdmin());
+      // Split read into get and list for better query validation performance.
+      allow get: if isSignedIn() && (
+        resource.data.receiverId == request.auth.uid || 
+        resource.data.senderId == request.auth.uid || 
+        isAdmin()
+      );
+      
+      allow list: if isSignedIn() && (
+        isAdmin() || 
+        resource.data.receiverId == request.auth.uid || 
+        resource.data.senderId == request.auth.uid
+      );
+      
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (resource.data.receiverId == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (resource.data.receiverId == request.auth.uid || isAdmin());
