@@ -40,6 +40,11 @@
           "type": "boolean",
           "description": "True if the user is the first user (User 1)."
         },
+        "pastUsernames": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of previous usernames used by the user."
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp of account creation.",

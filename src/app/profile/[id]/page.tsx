@@ -196,11 +196,11 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+            <div className="space-y-6">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Description</h3>
+                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Description</h3>
                   {isOwnProfile && !isEditingDescription && (
                     <Button 
                       variant="ghost" 
@@ -251,9 +251,30 @@ export default function ProfilePage() {
                   </p>
                 )}
               </div>
+
+              {profileUser.pastUsernames && profileUser.pastUsernames.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Past Names</h3>
+                  <div className="flex flex-wrap gap-x-2 gap-y-1">
+                    {profileUser.pastUsernames.map((name: string, i: number) => (
+                      <span key={i} className="text-xs text-muted-foreground/60 italic font-medium">
+                        {name}{i < (profileUser.pastUsernames?.length || 0) - 1 ? "," : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-col items-end gap-2 pt-6">
+            <div className="flex flex-col items-end gap-6 md:pt-4">
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">Joined Since</span>
+                <div className="flex items-center gap-1.5 text-foreground/60">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-sm font-medium">{joinDate}</span>
+                </div>
+              </div>
+
               {!isOwnProfile && (
                 <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
                   <DialogTrigger asChild>
@@ -319,14 +340,6 @@ export default function ProfilePage() {
                   </DialogContent>
                 </Dialog>
               )}
-
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">Joined Since</span>
-                <div className="flex items-center gap-1.5 text-foreground/60">
-                  <Clock className="h-3 w-3" />
-                  <span className="text-sm font-medium">{joinDate}</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>

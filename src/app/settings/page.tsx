@@ -1,10 +1,11 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { doc, updateDoc, increment } from "firebase/firestore"
+import { doc, updateDoc, increment, arrayUnion } from "firebase/firestore"
 import { updatePassword, signOut } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -83,6 +84,7 @@ export default function SettingsPage() {
     const updateData = {
       username: newUsername,
       coins: increment(-1000),
+      pastUsernames: arrayUnion(userData.username)
     }
 
     updateDoc(userDocRef, updateData)
