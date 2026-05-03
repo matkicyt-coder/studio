@@ -6,7 +6,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Optimized isAdmin check for performance in list rules
+    // Optimized isAdmin check for performance
     function isAdmin() {
       return isSignedIn() && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
@@ -21,8 +21,7 @@ service cloud.firestore {
         resource.data.sequentialId == 1
       );
       
-      // Explicit list rule to allow admins to see all users
-      // or standard users to find the admin by sequentialId
+      // Explicitly separate standard user list from admin list
       allow list: if isSignedIn() && (
         isAdmin() ||
         (request.query.limit <= 10 && resource.data.sequentialId == 1)
@@ -37,17 +36,23 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      // Explicitly split read into get and list for the firestore query optimizer
+      // CRITICAL: Split 'list' operations to allow the optimizer to approve 
+      // simple ownership-based queries without resolving administrative checks.
+      
+      // Allow users to list messages where they are the sender or receiver
+      allow list: if isSignedIn() && (
+        resource.data.receiverId == request.auth.uid || 
+        resource.data.senderId == request.auth.uid
+      );
+      
+      // Allow admins to list all messages (standard list rule)
+      allow list: if isSignedIn() && isAdmin();
+      
+      // Allow reading specific messages
       allow get: if isSignedIn() && (
         resource.data.receiverId == request.auth.uid || 
         resource.data.senderId == request.auth.uid ||
         isAdmin()
-      );
-      
-      allow list: if isSignedIn() && (
-        isAdmin() ||
-        resource.data.receiverId == request.auth.uid || 
-        resource.data.senderId == request.auth.uid
       );
       
       allow create: if isSignedIn();
