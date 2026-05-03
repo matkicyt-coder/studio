@@ -504,24 +504,57 @@ export default function AdminPage() {
 
                         <div className="space-y-2">
                           <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Moderation</label>
-                          <div className="grid grid-cols-1 gap-2">
+                          <div className="grid grid-cols-2 gap-2">
                             {userItem.isBanned ? (
-                              <Button variant="outline" onClick={() => handleRemoveBan(userItem.id)} className="w-full font-headline font-bold uppercase text-[10px]">
+                              <Button variant="outline" onClick={() => handleRemoveBan(userItem.id)} className="col-span-2 font-headline font-bold uppercase text-[10px]">
                                 Remove All Sanctions
                               </Button>
                             ) : (
-                              <div className="space-y-2">
+                              <>
                                 <Button 
-                                  variant="outline" 
-                                  onClick={() => handleResetPassword(userItem)}
+                                  onClick={() => handleApplyBan(userItem.id, 'warning', "Direct admin warning.", userItem.description)}
                                   disabled={isUpdating}
-                                  className="w-full h-12 font-headline font-bold uppercase text-[10px] gap-2"
+                                  variant="outline" 
+                                  className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
                                 >
-                                  <Mail className="h-4 w-4" /> Send Password Reset
+                                  <AlertTriangle className="h-3 w-3 text-yellow-500" /> Warn
                                 </Button>
-                                <p className="text-[10px] text-muted-foreground italic text-center">No active bans. Use reports to apply sanctions.</p>
-                              </div>
+                                <Button 
+                                  onClick={() => handleApplyBan(userItem.id, 'perm', "Direct admin ban.", userItem.description)}
+                                  disabled={isUpdating}
+                                  variant="destructive" 
+                                  className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
+                                >
+                                  <Ban className="h-3 w-3" /> Perm Ban
+                                </Button>
+                                <Button 
+                                  onClick={() => handleApplyBan(userItem.id, 'temp-1', "Direct admin temp ban.", userItem.description)}
+                                  disabled={isUpdating}
+                                  variant="outline" 
+                                  className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
+                                >
+                                  <Clock className="h-3 w-3" /> Temp (1D)
+                                </Button>
+                                <Button 
+                                  onClick={() => handleApplyBan(userItem.id, 'temp-7', "Direct admin temp ban.", userItem.description)}
+                                  disabled={isUpdating}
+                                  variant="outline" 
+                                  className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
+                                >
+                                  <Clock className="h-3 w-3" /> Temp (7D)
+                                </Button>
+                              </>
                             )}
+                          </div>
+                          <div className="pt-4 space-y-2">
+                            <Button 
+                              variant="outline" 
+                              onClick={() => handleResetPassword(userItem)}
+                              disabled={isUpdating}
+                              className="w-full h-12 font-headline font-bold uppercase text-[10px] gap-2"
+                            >
+                              <Mail className="h-4 w-4" /> Send Password Reset
+                            </Button>
                           </div>
                         </div>
 
@@ -691,7 +724,7 @@ export default function AdminPage() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <h4 className="text-[10px) font-headline font-bold text-muted-foreground uppercase tracking-widest">Target</h4>
+                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Target</h4>
                           <div className="flex flex-col gap-1">
                             <p className="font-medium">{activeReport.targetUsername}</p>
                             {targetProfile && (

@@ -2,7 +2,7 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
 import { collection, query, where, limit, addDoc, doc, updateDoc } from "firebase/firestore"
 import { 
@@ -60,6 +60,13 @@ export default function ProfilePage() {
 
   const sequentialId = parseInt(params.id as string)
 
+  // Current logged in user data to get their username for reports
+  const currentUserDocRef = useMemoFirebase(() => {
+    if (!db || !user?.uid) return null
+    return doc(db, "users", user.uid)
+  }, [db, user?.uid])
+  const { data: currentUserData } = useDoc(currentUserDocRef)
+
   const userQuery = useMemoFirebase(() => {
     if (!db || isNaN(sequentialId)) return null
     return query(
@@ -98,12 +105,12 @@ export default function ProfilePage() {
   }
 
   const handleReport = async () => {
-    if (!db || !user || !profileUser || !reportReason) return
+    if (!db || !user || !profileUser || !reportReason || !currentUserData) return
 
     setIsReporting(true)
     const reportData = {
       reporterId: user.uid,
-      reporterUsername: user.displayName || "Anonymous",
+      reporterUsername: currentUserData.username,
       targetUserId: profileUser.id,
       targetUsername: profileUser.username,
       reportTarget,
@@ -329,7 +336,7 @@ export default function ProfilePage() {
                     <DialogFooter>
                       <Button 
                         onClick={handleReport}
-                        disabled={isReporting || !reportReason}
+                        disabled={isReporting || !reportReason || !currentUserData}
                         variant="destructive"
                         className="w-full h-12 font-headline font-bold uppercase text-xs"
                       >
