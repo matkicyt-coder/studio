@@ -52,7 +52,7 @@ export function NavigationBar() {
   const age = useMemo(() => calculateAge(userData?.dateOfBirth), [userData?.dateOfBirth])
   const isParentalMode = age < 18
 
-  // Memoize users for search - Only query if user is authenticated to avoid permission errors
+  // Memoize users for search
   const usersRef = useMemoFirebase(() => {
     if (!db || isUserLoading || !user) return null
     return query(collection(db, "users"), limit(100))
@@ -83,7 +83,7 @@ export function NavigationBar() {
       toast({
         variant: "destructive",
         title: "Purchase Restricted",
-        description: "Terminal accounts under 18 are not permitted to process transactions.",
+        description: "Accounts under 18 are not permitted to process transactions.",
       })
       return
     }
@@ -126,7 +126,6 @@ export function NavigationBar() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-end">
-          {/* User Search Bar */}
           <div className="relative flex-1 max-w-[320px]" ref={searchRef}>
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -194,27 +193,14 @@ export function NavigationBar() {
             </DialogTrigger>
             <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Buy coins</DialogTitle>
+                <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Purchase Coins</DialogTitle>
                 <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                   {isParentalMode 
                     ? "Purchases are restricted while Parental Mode is active." 
-                    : "Collect free digital currency to unlock premium features."}
+                    : "Collect currency to unlock new features."}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-3 py-4">
-                <Button 
-                  onClick={() => {
-                    router.push("/premium")
-                    const closeBtn = document.querySelector('[data-radix-collection-item]') as HTMLElement
-                    closeBtn?.click()
-                  }}
-                  variant="outline"
-                  className="w-full h-14 border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 font-headline font-bold uppercase tracking-tighter gap-2"
-                >
-                  <Crown className="h-5 w-5" />
-                  Become Premium
-                </Button>
-
                 {[
                   { amount: 100, label: "100" },
                   { amount: 500, label: "500" },
@@ -235,6 +221,23 @@ export function NavigationBar() {
                     </Button>
                   </div>
                 ))}
+
+                <div className="pt-2">
+                  <Button 
+                    onClick={() => {
+                      router.push("/premium")
+                      // Trigger closure of dialog via click on backdrop or specific ref if available,
+                      // but usually redirect handles it. Simple manual trigger for UX:
+                      const closeBtn = document.querySelector('[data-radix-collection-item]') as HTMLElement
+                      closeBtn?.click()
+                    }}
+                    variant="default"
+                    className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-headline font-bold uppercase tracking-tighter gap-2 rounded-xl shadow-lg"
+                  >
+                    <Crown className="h-5 w-5" />
+                    Become Premium
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>

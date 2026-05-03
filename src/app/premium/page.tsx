@@ -8,7 +8,7 @@ import { NavigationBar } from "@/components/navigation-bar"
 import { doc, updateDoc, increment, arrayUnion } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { PremiumBadge } from "@/components/premium-badge"
-import { Check, Crown, Star, Coins, Loader2, ArrowLeft } from "lucide-react"
+import { Check, Crown, Star, Coins, Loader2, ArrowLeft, Award } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -39,7 +39,7 @@ export default function PremiumPage() {
     if (!isFree && (userData.coins ?? 0) < 20000) {
       toast({
         variant: "destructive",
-        title: "Insufficient Balance",
+        title: "Insufficient Coins",
         description: "You need 20,000 coins to upgrade to Premium.",
       })
       return
@@ -56,7 +56,7 @@ export default function PremiumPage() {
       .then(() => {
         toast({
           title: "PREMIUM ACTIVATED",
-          description: "Welcome to the elite tier of the terminal. You've earned the Premium Club badge!",
+          description: "Welcome to the Premium Club! You've earned your exclusive badge.",
         })
       })
       .catch(async (error) => {
@@ -78,75 +78,78 @@ export default function PremiumPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background w-full pt-24 px-4 pb-20">
+    <main className="min-h-screen bg-[#F2F4F5] dark:bg-black w-full pt-24 px-4 pb-20 font-body">
       <NavigationBar />
       <div className="max-w-4xl mx-auto space-y-12 animate-fade-in">
-        <div className="flex items-center gap-4">
-          <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full">
+        <div className="flex items-center gap-6">
+          <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full bg-white shadow-sm border border-border">
             <ArrowLeft className="h-6 w-6" />
           </Button>
-          <h1 className="text-3xl sm:text-5xl font-headline font-bold tracking-tighter uppercase">Premium Terminal</h1>
+          <h1 className="text-4xl sm:text-6xl font-headline font-bold tracking-tight text-[#111] dark:text-white uppercase italic">
+            PREMIUM
+          </h1>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-6 bg-card border border-border p-8 rounded-3xl shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Crown className="h-24 w-24 text-primary" />
+          <div className="space-y-8 bg-white dark:bg-[#111] border-4 border-[#ddd] dark:border-[#222] p-8 rounded-[40px] shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-6 opacity-5">
+              <Crown className="h-40 w-40 text-amber-500" />
             </div>
             
-            <div className="flex items-center gap-3">
-              <PremiumBadge className="h-12 w-12" />
-              <h2 className="text-2xl font-headline font-bold uppercase">Membership Benefits</h2>
+            <div className="flex items-center gap-4">
+              <PremiumBadge className="h-16 w-16" />
+              <h2 className="text-3xl font-headline font-bold uppercase italic tracking-tighter">PERKS</h2>
             </div>
 
-            <ul className="space-y-4 pt-4">
+            <ul className="space-y-6 pt-4">
               {[
-                { icon: Star, text: "UP TO 10 BEST FRIENDS", sub: "Standard limit is 5" },
-                { icon: Coins, text: "10,000 MONTHLY COINS", sub: "Exclusive allowance" },
-                { icon: Check, text: "ELITE PREMIUM BADGE", sub: "Visible on profile & search" },
-                { icon: Award, text: "PREMIUM CLUB BADGE", sub: "Exclusive achievement badge" },
-                { icon: Crown, text: "PRIORITY TERMINAL ACCESS", sub: "Special status" },
+                { icon: Star, text: "10 BEST FRIENDS", sub: "Double the standard limit" },
+                { icon: Coins, text: "10K MONTHLY COINS", sub: "Exclusive regular allowance" },
+                { icon: Award, text: "ELITE BADGE", sub: "Visible to everyone" },
+                { icon: Crown, text: "PRIORITY ACCESS", sub: "Special member status" },
               ].map((benefit, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <div className="mt-1 bg-primary/10 p-1.5 rounded-full">
-                    {benefit.icon === Award ? <Award className="h-4 w-4 text-primary" /> : <benefit.icon className="h-4 w-4 text-primary" />}
+                <li key={i} className="flex items-center gap-5">
+                  <div className="bg-[#EBF5FF] dark:bg-[#1A202C] p-3 rounded-2xl">
+                    <benefit.icon className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-headline font-bold text-sm uppercase tracking-tight">{benefit.text}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{benefit.sub}</p>
+                    <p className="font-headline font-bold text-lg uppercase tracking-tight">{benefit.text}</p>
+                    <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-widest">{benefit.sub}</p>
                   </div>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="flex flex-col justify-center space-y-4">
+          <div className="flex flex-col justify-center gap-6">
             {userData?.isPremium ? (
-              <div className="bg-primary/5 border border-primary/20 p-8 rounded-3xl text-center space-y-4">
-                <Crown className="h-12 w-12 text-primary mx-auto" />
-                <h3 className="text-xl font-headline font-bold uppercase">PREMIUM ACTIVE</h3>
-                <p className="text-muted-foreground text-xs uppercase tracking-widest font-headline">Your status is permanent and verified.</p>
+              <div className="bg-white dark:bg-[#111] border-4 border-primary p-10 rounded-[40px] text-center space-y-4 shadow-xl">
+                <Crown className="h-20 w-20 text-primary mx-auto" />
+                <h3 className="text-3xl font-headline font-bold uppercase italic">MEMBER ACTIVE</h3>
+                <p className="text-muted-foreground text-xs uppercase font-bold tracking-widest">You are an elite member.</p>
               </div>
             ) : (
               <>
                 <Button 
                   onClick={() => handleBuyPremium(false)}
                   disabled={isUpdating}
-                  className="h-20 bg-primary text-primary-foreground text-xl font-headline font-bold uppercase tracking-tighter rounded-2xl shadow-lg hover:scale-[1.02] transition-transform"
+                  className="h-24 bg-primary text-white text-2xl font-headline font-bold uppercase tracking-tighter rounded-[30px] shadow-[0_8px_0_0_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_10px_0_0_rgba(14,165,233,0.3)] active:translate-y-[4px] active:shadow-none transition-all"
                 >
-                  {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Coins className="mr-2 h-6 w-6" />}
+                  {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Coins className="mr-3 h-8 w-8" />}
                   UPGRADE FOR 20K COINS
                 </Button>
+                
                 <Button 
                   onClick={() => handleBuyPremium(true)}
                   disabled={isUpdating}
                   variant="outline"
-                  className="h-14 font-headline font-bold uppercase text-[10px] tracking-widest rounded-xl"
+                  className="h-16 bg-white dark:bg-[#111] border-4 border-[#ddd] dark:border-[#222] font-headline font-bold uppercase text-xs tracking-widest rounded-[24px] hover:bg-accent"
                 >
-                  GET PERMANENT PREMIUM (FREE)
+                  PERMANENT ACCESS (FREE)
                 </Button>
-                <p className="text-center text-[10px] text-muted-foreground font-headline uppercase tracking-widest">
-                  Unlock all features permanently. No recurring fees.
+                
+                <p className="text-center text-[11px] text-muted-foreground font-bold uppercase tracking-[0.2em] px-8 leading-relaxed">
+                  Join the club and unlock all elite features forever.
                 </p>
               </>
             )}
@@ -156,6 +159,3 @@ export default function PremiumPage() {
     </main>
   )
 }
-
-// Simple Award icon import for the list mapping
-import { Award as AwardIcon } from "lucide-react"
