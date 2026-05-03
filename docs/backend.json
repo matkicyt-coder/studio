@@ -40,6 +40,10 @@
           "type": "boolean",
           "description": "True if the user is the first user (User 1)."
         },
+        "isVerified": {
+          "type": "boolean",
+          "description": "True if the user has a verification checkmark."
+        },
         "pastUsernames": {
           "type": "array",
           "items": { "type": "string" },

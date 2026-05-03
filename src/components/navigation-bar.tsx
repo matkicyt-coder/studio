@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Settings, Coins, Home, Search, ShieldCheck, User } from "lucide-react"
+import { Settings, Coins, Home, Search, ShieldCheck, User, CheckCircle2 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
 import { doc, updateDoc, increment, collection, query, limit } from "firebase/firestore"
 import { formatCurrency, cn } from "@/lib/utils"
@@ -130,8 +130,11 @@ export function NavigationBar() {
                     >
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-sm">{u.username}</span>
-                        {u.isAdmin && <ShieldCheck className="h-3 w-3 text-primary" />}
+                        <span className="font-medium text-sm flex items-center gap-1.5">
+                          {u.username}
+                          {u.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-primary fill-primary/10" />}
+                          {u.isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
+                        </span>
                       </div>
                       <span className="text-[10px] font-headline text-muted-foreground">#{u.sequentialId}</span>
                     </button>

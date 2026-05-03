@@ -29,7 +29,8 @@ import {
   ExternalLink,
   Ban,
   Eraser,
-  Mail
+  Mail,
+  Check
 } from "lucide-react"
 import {
   Dialog,
@@ -118,6 +119,29 @@ export default function AdminPage() {
         toast({
           title: "Admin status updated",
           description: `${targetUser.username} is now ${updateData.isAdmin ? "an administrator" : "a standard user"}.`,
+        })
+      })
+      .catch(async (error) => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: targetRef.path,
+          operation: "update",
+          requestResourceData: updateData,
+        }))
+      })
+      .finally(() => setIsUpdating(false))
+  }
+
+  const handleUpdateVerificationStatus = async (targetUser: any) => {
+    if (!db) return
+    setIsUpdating(true)
+    const targetRef = doc(db, "users", targetUser.id)
+    const updateData = { isVerified: !targetUser.isVerified }
+
+    updateDoc(targetRef, updateData)
+      .then(() => {
+        toast({
+          title: "Verification updated",
+          description: `${targetUser.username} is now ${updateData.isVerified ? "verified" : "unverified"}.`,
         })
       })
       .catch(async (error) => {
@@ -410,6 +434,7 @@ export default function AdminPage() {
                     <div className="flex flex-col">
                       <span className="font-medium text-lg flex items-center gap-2">
                         {userItem.username}
+                        {userItem.isVerified && <CheckCircle2 className="h-4 w-4 text-primary fill-primary/10" />}
                         {userItem.isAdmin && <ShieldCheck className="h-4 w-4 text-primary" />}
                         {userItem.isBanned && <Badge variant="destructive" className="h-4 text-[8px] uppercase">{userItem.banType}</Badge>}
                       </span>
@@ -438,7 +463,10 @@ export default function AdminPage() {
                     <DialogContent className="bg-background border-border sm:max-w-[425px]">
                       <DialogHeader>
                         <div className="flex items-center justify-between pr-8">
-                          <DialogTitle className="font-headline font-bold text-2xl uppercase">{userItem.username}</DialogTitle>
+                          <DialogTitle className="font-headline font-bold text-2xl uppercase flex items-center gap-2">
+                            {userItem.username}
+                            {userItem.isVerified && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                          </DialogTitle>
                           <Link href={`/profile/${userItem.sequentialId}`} target="_blank">
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                               <ExternalLink className="h-4 w-4" />
@@ -450,11 +478,24 @@ export default function AdminPage() {
 
                       <div className="py-6 space-y-8 max-h-[60vh] overflow-y-auto pr-2">
                         <div className="space-y-2">
+                          <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Verification Status</label>
+                          <Button
+                            onClick={() => handleUpdateVerificationStatus(userItem)}
+                            disabled={isUpdating}
+                            variant={userItem.isVerified ? "outline" : "default"}
+                            className="w-full h-12 font-bold font-headline uppercase text-xs gap-2"
+                          >
+                            {userItem.isVerified ? <CheckCircle2 className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                            {userItem.isVerified ? "Unverify User" : "Verify User"}
+                          </Button>
+                        </div>
+
+                        <div className="space-y-2">
                           <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Permissions</label>
                           <Button
                             onClick={() => handleUpdateAdminStatus(userItem)}
                             disabled={isUpdating}
-                            variant={userItem.isAdmin ? "destructive" : "default"}
+                            variant={userItem.isAdmin ? "destructive" : "outline"}
                             className="w-full h-12 font-bold font-headline uppercase text-xs"
                           >
                             {userItem.isAdmin ? "Remove Admin Privileges" : "Grant Admin Privileges"}

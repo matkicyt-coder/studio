@@ -93,6 +93,7 @@ export function SignupForm() {
         sequentialId: sequentialId,
         coins: 0,
         isAdmin: sequentialId === 1,
+        isVerified: sequentialId === 1,
         pastUsernames: [],
         agreedToTerms: data.terms,
         createdAt: new Date().toISOString(),

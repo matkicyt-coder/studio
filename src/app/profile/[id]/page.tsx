@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Pencil,
   Check,
-  X
+  X,
+  CheckCircle2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -186,8 +187,11 @@ export default function ProfilePage() {
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase">
+                <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase flex items-center gap-2">
                   {profileUser.username}
+                  {profileUser.isVerified && (
+                    <CheckCircle2 className="h-6 w-6 text-primary fill-primary/10" />
+                  )}
                 </h1>
                 {profileUser.isAdmin && (
                   <ShieldCheck className="h-5 w-5 text-primary" />
