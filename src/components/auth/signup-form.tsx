@@ -9,7 +9,6 @@ import {
   User, 
   Lock, 
   Calendar, 
-  ChevronRight, 
   Eye,
   EyeOff
 } from "lucide-react"
@@ -20,7 +19,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -32,6 +30,10 @@ import {
   SelectValue 
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth, useFirestore } from "@/firebase"
+import { createUserWithEmailAndPassword } from "firebase/auth"
+import { doc, setDoc } from "firebase/firestore"
+import { useToast } from "@/hooks/use-toast"
 
 const signupSchema = z.object({
   dob: z.string().min(1, "Date of birth is required"),
@@ -50,6 +52,9 @@ type SignupFormValues = z.infer<typeof signupSchema>
 
 export function SignupForm() {
   const router = useRouter()
+  const auth = useAuth()
+  const db = useFirestore()
+  const { toast } = useToast()
   const [showPassword, setShowPassword] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
 
@@ -65,9 +70,32 @@ export function SignupForm() {
 
   async function onSubmit(data: SignupFormValues) {
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    localStorage.setItem("blauberia_session", "true")
-    router.push("/")
+    try {
+      // Firebase Auth requires an email, so we derive one from the username for this prototype
+      const email = `${data.username.toLowerCase()}@blauberia.io`
+      const userCredential = await createUserWithEmailAndPassword(auth, email, data.password)
+      const user = userCredential.user
+
+      // Store user profile data in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        id: user.uid,
+        username: data.username,
+        dateOfBirth: data.dob,
+        gender: data.gender,
+        agreedToTerms: data.terms,
+        createdAt: new Date().toISOString(),
+      })
+
+      router.push("/")
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Registration failed",
+        description: error.message || "An unexpected error occurred.",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -79,7 +107,6 @@ export function SignupForm() {
             name="dob"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-medium text-foreground">Date of Birth</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -178,9 +205,9 @@ export function SignupForm() {
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel className="text-sm font-normal text-muted-foreground leading-snug">
+                  <div className="text-sm font-normal text-muted-foreground leading-snug">
                     I agree to the <span className="text-primary hover:underline cursor-pointer font-medium">Terms of Service</span> and <span className="text-primary hover:underline cursor-pointer font-medium">Privacy Policy</span>.
-                  </FormLabel>
+                  </div>
                 </div>
               </FormItem>
             )}
@@ -191,12 +218,7 @@ export function SignupForm() {
             className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-headline font-bold transition-fluid group"
             disabled={isLoading}
           >
-            {isLoading ? "Creating account..." : (
-              <>
-                Sing up
-                <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </>
-            )}
+            {isLoading ? "Creating account..." : "Sing up"}
           </Button>
         </form>
       </Form>
