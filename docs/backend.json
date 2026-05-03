@@ -7,178 +7,110 @@
       "type": "object",
       "description": "Represents a user registered in the application.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier (Firebase Auth UID)."
-        },
-        "username": {
-          "type": "string",
-          "description": "Chosen username."
-        },
-        "email": {
-          "type": "string",
-          "description": "User's verified recovery email."
-        },
-        "phoneNumber": {
-          "type": "string",
-          "description": "User's linked phone number."
-        },
-        "description": {
-          "type": "string",
-          "description": "User's self-written bio."
-        },
-        "dateOfBirth": {
-          "type": "string",
-          "description": "User's date of birth.",
-          "format": "date"
-        },
-        "gender": {
-          "type": "string",
-          "description": "User's gender."
-        },
-        "sequentialId": {
-          "type": "number",
-          "description": "Numeric ID starting from 1."
-        },
-        "coins": {
-          "type": "number",
-          "description": "User's currency balance."
-        },
-        "isAdmin": {
-          "type": "boolean",
-          "description": "True if the user is the first user (User 1)."
-        },
-        "isVerified": {
-          "type": "boolean",
-          "description": "True if the user has a verification checkmark."
-        },
-        "isPremium": {
-          "type": "boolean",
-          "description": "True if the user has premium status."
-        },
-        "badges": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "description": { "type": "string" },
+        "dateOfBirth": { "type": "string", "format": "date" },
+        "gender": { "type": "string" },
+        "sequentialId": { "type": "number" },
+        "coins": { "type": "number" },
+        "isAdmin": { "type": "boolean" },
+        "isVerified": { "type": "boolean" },
+        "isPremium": { "type": "boolean" },
+        "badges": { "type": "array", "items": { "type": "string" } },
+        "pastUsernames": { "type": "array", "items": { "type": "string" } },
+        "moderationHistory": {
           "type": "array",
-          "items": { "type": "string" },
-          "description": "List of badge IDs earned by the user."
-        },
-        "pastUsernames": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "List of previous usernames used by the user."
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "reason": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
         },
         "isBanned": { "type": "boolean" },
-        "banType": { 
-          "type": "string", 
-          "enum": ["none", "warning", "temp-1", "temp-7", "perm"] 
-        },
+        "banType": { "type": "string", "enum": ["none", "warning", "temp-1", "temp-7", "perm"] },
         "banReason": { "type": "string" },
         "banExpiry": { "type": "string", "format": "date-time" },
         "banOffensiveContent": { "type": "string" },
         "needsToAcceptTerms": { "type": "boolean" },
         "lastSeen": { "type": "string", "format": "date-time" },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp of account creation.",
-          "format": "date-time"
-        }
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "username",
-        "dateOfBirth",
-        "gender",
-        "sequentialId",
-        "coins",
-        "isAdmin",
-        "createdAt"
-      ]
+      "required": ["id", "username", "sequentialId", "coins", "isAdmin", "createdAt"]
     },
     "Friendship": {
       "title": "Friendship",
       "type": "object",
       "properties": {
-        "user1": { "type": "string", "description": "UID of the first user." },
-        "user2": { "type": "string", "description": "UID of the second user." },
-        "status": { 
-          "type": "string", 
-          "enum": ["pending", "accepted"],
-          "description": "Current status of the connection."
-        },
-        "requestSentBy": { 
-          "type": "string", 
-          "description": "UID of the user who initiated the request." 
-        },
-        "bestFriendOf": { 
-          "array": { 
-            "items": { "type": "string" },
-            "description": "UIDs of the users who have marked this person as a best friend."
-          }
-        },
+        "user1": { "type": "string" },
+        "user2": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted"] },
+        "requestSentBy": { "type": "string" },
+        "bestFriendOf": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["user1", "user2", "status", "requestSentBy", "createdAt"]
     },
+    "Follow": {
+      "title": "Follow",
+      "type": "object",
+      "properties": {
+        "followerId": { "type": "string" },
+        "followingId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["followerId", "followingId", "createdAt"]
+    },
+    "VerificationRequest": {
+      "title": "VerificationRequest",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "denied"] },
+        "requestedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "username", "status", "requestedAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["coin_purchase", "premium_purchase", "username_change"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "type", "createdAt"]
+    },
     "Report": {
       "title": "Report",
       "type": "object",
-      "description": "A report filed against a user.",
       "properties": {
         "id": { "type": "string" },
         "reporterId": { "type": "string" },
-        "reporterUsername": { "type": "string" },
         "targetUserId": { "type": "string" },
-        "targetUsername": { "type": "string" },
-        "reportTarget": { 
-          "type": "string", 
-          "enum": ["username", "description"],
-          "description": "What part of the profile is being reported."
-        },
-        "category": { 
-          "type": "string", 
-          "enum": ["sexual", "inappropriate", "other"],
-          "description": "The category of the violation."
-        },
         "reason": { "type": "string" },
-        "status": { 
-          "type": "string", 
-          "enum": ["pending", "solved", "unsolved", "troll"],
-          "description": "Current status of the report."
-        },
-        "claimedById": { "type": "string" },
-        "claimedByUsername": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["reporterId", "targetUserId", "reason", "createdAt", "reportTarget", "category"]
-    },
-    "Counter": {
-      "title": "Counter",
-      "type": "object",
-      "properties": {
-        "count": { "type": "number" }
       }
     }
   },
   "auth": {
-    "providers": [
-      "password"
-    ]
+    "providers": ["password"]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": { "$ref": "#/backend/entities/User" },
-      "description": "User profile data."
-    },
-    "/reports/{reportId}": {
-      "schema": { "$ref": "#/backend/entities/Report" },
-      "description": "User misconduct reports."
-    },
-    "/counters/{counterId}": {
-      "schema": { "$ref": "#/backend/entities/Counter" },
-      "description": "Internal counters for sequential IDs."
-    },
-    "/friendships/{friendshipId}": {
-      "schema": { "$ref": "#/backend/entities/Friendship" },
-      "description": "Relationships between users."
-    }
+    "/users/{userId}": { "schema": { "$ref": "#/backend/entities/User" }, "description": "User profiles." },
+    "/friendships/{friendshipId}": { "schema": { "$ref": "#/backend/entities/Friendship" }, "description": "Social connections." },
+    "/follows/{followId}": { "schema": { "$ref": "#/backend/entities/Follow" }, "description": "One-way following relationships." },
+    "/verificationRequests/{requestId}": { "schema": { "$ref": "#/backend/entities/VerificationRequest" }, "description": "Requests for verification badge." },
+    "/transactions/{transactionId}": { "schema": { "$ref": "#/backend/entities/Transaction" }, "description": "Financial and account logs." },
+    "/reports/{reportId}": { "schema": { "$ref": "#/backend/entities/Report" }, "description": "Misconduct reports." },
+    "/counters/{counterId}": { "schema": { "type": "object", "properties": { "count": { "type": "number" } } }, "description": "System counters." }
   }
 }

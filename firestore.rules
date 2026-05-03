@@ -2,68 +2,51 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Basic sign-in check
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Check if user is an administrator
+    function isSignedIn() { return request.auth != null; }
     function isAdmin() {
-      return isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // User profile rules
     match /users/{userId} {
-      allow get, list: if isSignedIn();
+      allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
-    // Misconduct report rules
+    match /friendships/{friendshipId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (request.resource.data.user1 == request.auth.uid || request.resource.data.user2 == request.auth.uid);
+      allow update: if isSignedIn() && (request.auth.uid == resource.data.user1 || request.auth.uid == resource.data.user2);
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.user1 || request.auth.uid == resource.data.user2);
+    }
+
+    match /follows/{followId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.followerId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.followerId == request.auth.uid;
+    }
+
+    match /verificationRequests/{requestId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow list: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow list: if isAdmin();
+    }
+
     match /reports/{reportId} {
       allow create: if isSignedIn();
       allow read, list, update, delete: if isAdmin();
     }
 
-    // Internal system counters
     match /counters/{counterId} {
       allow read, write: if isSignedIn();
-    }
-
-    // Social connection rules - Deployment Trigger: v1.0.4
-    match /friendships/{friendshipId} {
-      allow read, list: if isSignedIn();
-      
-      allow create: if isSignedIn() && (
-        request.resource.data.user1 == request.auth.uid || 
-        request.resource.data.user2 == request.auth.uid
-      ) && (
-        request.resource.data.status == 'pending' || 
-        (
-          request.resource.data.status == 'accepted' && 
-          (
-            get(/databases/$(database)/documents/users/$(request.resource.data.user1)).data.sequentialId == 2 ||
-            get(/databases/$(database)/documents/users/$(request.resource.data.user2)).data.sequentialId == 2
-          )
-        )
-      ) && (
-        request.resource.data.requestSentBy == request.auth.uid ||
-        get(/databases/$(database)/documents/users/$(request.resource.data.requestSentBy)).data.sequentialId == 2
-      );
-      
-      allow update: if isSignedIn() && (
-        // Only the receiver can accept a request
-        (resource.data.status == 'pending' && request.resource.data.status == 'accepted' && request.auth.uid != resource.data.requestSentBy && (request.auth.uid == resource.data.user1 || request.auth.uid == resource.data.user2)) ||
-        // Either can update bestFriendOf
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bestFriendOf']))
-      );
-
-      allow delete: if isSignedIn() && (
-        request.auth.uid == resource.data.user1 || 
-        request.auth.uid == resource.data.user2
-      );
     }
   }
 }

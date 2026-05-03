@@ -4,7 +4,7 @@
 import { useParams, useRouter } from "next/navigation"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { NavigationBar } from "@/components/navigation-bar"
-import { collection, query, where, limit, addDoc, doc, updateDoc, deleteDoc, arrayUnion } from "firebase/firestore"
+import { collection, query, where, limit, addDoc, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore"
 import { 
   User, 
   ShieldCheck, 
@@ -23,7 +23,9 @@ import {
   UserCheck,
   UserX,
   Crown,
-  Users
+  Users,
+  MoreVertical,
+  Wifi
 } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { PremiumBadge } from "@/components/premium-badge"
@@ -37,6 +39,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Select,
   SelectContent,
@@ -66,12 +74,6 @@ export default function ProfilePage() {
   const db = useFirestore()
   const { toast } = useToast()
   
-  const [reportReason, setReportReason] = useState("")
-  const [reportTarget, setReportTarget] = useState<"username" | "description">("username")
-  const [reportCategory, setReportCategory] = useState<"sexual" | "inappropriate" | "other">("other")
-  const [isReporting, setIsReporting] = useState(false)
-  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
-
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [newDescription, setNewDescription] = useState("")
   const [isSavingDescription, setIsSavingDescription] = useState(false)
@@ -91,75 +93,60 @@ export default function ProfilePage() {
   const { data: currentUserData } = useDoc(currentUserDocRef)
 
   const userQuery = useMemoFirebase(() => {
-    if (!db || !user || isNaN(sequentialId)) return null
-    return query(
-      collection(db, "users"), 
-      where("sequentialId", "==", sequentialId),
-      limit(1)
-    )
-  }, [db, user, sequentialId])
-
-  const { data: userDataList, isLoading } = useCollection(userQuery)
+    if (!db || isNaN(sequentialId)) return null
+    return query(collection(db, "users"), where("sequentialId", "==", sequentialId), limit(1))
+  }, [db, sequentialId])
+  const { data: userDataList, isLoading: isUserLoadingDoc } = useCollection(userQuery)
   const profileUser = userDataList?.[0]
 
-  const friendshipsQuery1 = useMemoFirebase(() => {
-    if (!db || !user?.uid || !profileUser) return null
-    return query(collection(db, "friendships"), where("user1", "==", user.uid), where("user2", "==", profileUser.id))
-  }, [db, user?.uid, profileUser])
-  const friendshipsQuery2 = useMemoFirebase(() => {
-    if (!db || !user?.uid || !profileUser) return null
-    return query(collection(db, "friendships"), where("user2", "==", user.uid), where("user1", "==", profileUser.id))
-  }, [db, user?.uid, profileUser])
-  
-  const { data: f1 } = useCollection(friendshipsQuery1)
-  const { data: f2 } = useCollection(friendshipsQuery2)
-  const friendship = useMemo(() => [...(f1 || []), ...(f2 || [])][0], [f1, f2])
-
-  const totalFriendsCountQuery1 = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
-    return query(collection(db, "friendships"), where("user1", "==", user.uid), where("status", "==", "accepted"))
-  }, [db, user?.uid])
-  const totalFriendsCountQuery2 = useMemoFirebase(() => {
-    if (!db || !user?.uid) return null
-    return query(collection(db, "friendships"), where("user2", "==", user.uid), where("status", "==", "accepted"))
-  }, [db, user?.uid])
-  const { data: tf1 } = useCollection(totalFriendsCountQuery1)
-  const { data: tf2 } = useCollection(totalFriendsCountQuery2)
-  const totalFriendsCount = (tf1?.length || 0) + (tf2?.length || 0)
-
-  const profileFriendshipsQuery1 = useMemoFirebase(() => {
+  // Stats: Friends
+  const f1Query = useMemoFirebase(() => {
     if (!db || !profileUser) return null
     return query(collection(db, "friendships"), where("user1", "==", profileUser.id), where("status", "==", "accepted"))
   }, [db, profileUser])
-  const profileFriendshipsQuery2 = useMemoFirebase(() => {
+  const f2Query = useMemoFirebase(() => {
     if (!db || !profileUser) return null
     return query(collection(db, "friendships"), where("user2", "==", profileUser.id), where("status", "==", "accepted"))
   }, [db, profileUser])
-  
-  const { data: pf1 } = useCollection(profileFriendshipsQuery1)
-  const { data: pf2 } = useCollection(profileFriendshipsQuery2)
-  
-  const profileFriendIds = useMemo(() => {
-    const ids1 = (pf1 || []).map(f => f.user1 === profileUser?.id ? f.user2 : f.user1)
-    const ids2 = (pf2 || []).map(f => f.user1 === profileUser?.id ? f.user2 : f.user1)
-    return [...ids1, ...ids2]
-  }, [pf1, pf2, profileUser?.id])
+  const { data: f1Count } = useCollection(f1Query)
+  const { data: f2Count } = useCollection(f2Query)
+  const friendsCount = (f1Count?.length || 0) + (f2Count?.length || 0)
 
-  const profileFriendsDataQuery = useMemoFirebase(() => {
-    if (!db || profileFriendIds.length === 0) return null
-    return query(collection(db, "users"), where("id", "in", profileFriendIds))
-  }, [db, profileFriendIds])
-  
-  const { data: profileFriends, isLoading: isProfileFriendsLoading } = useCollection(profileFriendsDataQuery)
+  // Stats: Followers
+  const followersQuery = useMemoFirebase(() => {
+    if (!db || !profileUser) return null
+    return query(collection(db, "follows"), where("followingId", "==", profileUser.id))
+  }, [db, profileUser])
+  const { data: followers } = useCollection(followersQuery)
+  const followersCount = followers?.length || 0
 
-  useEffect(() => {
-    if (profileUser) {
-      setNewDescription(profileUser.description || "")
-    }
-  }, [profileUser])
+  // Stats: Following
+  const followingQuery = useMemoFirebase(() => {
+    if (!db || !profileUser) return null
+    return query(collection(db, "follows"), where("followerId", "==", profileUser.id))
+  }, [db, profileUser])
+  const { data: followingList } = useCollection(followingQuery)
+  const followingCount = followingList?.length || 0
+
+  // Relationships with current user
+  const myFriendshipQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid || !profileUser) return null
+    const small = user.uid < profileUser.id ? user.uid : profileUser.id
+    const big = user.uid < profileUser.id ? profileUser.id : user.uid
+    return query(collection(db, "friendships"), where("user1", "==", small), where("user2", "==", big))
+  }, [db, user?.uid, profileUser])
+  const { data: myFriendshipList } = useCollection(myFriendshipQuery)
+  const friendship = myFriendshipList?.[0]
+
+  const myFollowQuery = useMemoFirebase(() => {
+    if (!db || !user?.uid || !profileUser) return null
+    return query(collection(db, "follows"), where("followerId", "==", user.uid), where("followingId", "==", profileUser.id))
+  }, [db, user?.uid, profileUser])
+  const { data: myFollowList } = useCollection(myFollowQuery)
+  const amIFollowing = (myFollowList?.length || 0) > 0
 
   const handleUpdateDescription = async () => {
-    if (!db || !user || !profileUser || user.uid !== profileUser.id) return
+    if (!db || !profileUser) return
     setIsSavingDescription(true)
     const userRef = doc(db, "users", profileUser.id)
     updateDoc(userRef, { description: newDescription })
@@ -167,60 +154,12 @@ export default function ProfilePage() {
         toast({ title: "Description updated" })
         setIsEditingDescription(false)
       })
-      .catch(error => {
-        errorEmitter.emit("permission-error", new FirestorePermissionError({
-          path: userRef.path,
-          operation: "update",
-          requestResourceData: { description: newDescription }
-        }))
-      })
       .finally(() => setIsSavingDescription(false))
   }
 
-  const handleReport = async () => {
-    if (!db || !user || !profileUser || !reportReason || !currentUserData) return
-    setIsReporting(true)
-
-    const reportData = {
-      reporterId: user.uid,
-      reporterUsername: currentUserData.username,
-      targetUserId: profileUser.id,
-      targetUsername: profileUser.username,
-      reportTarget: reportTarget,
-      category: reportCategory,
-      reason: reportReason,
-      status: "pending",
-      createdAt: new Date().toISOString()
-    }
-
-    const reportsRef = collection(db, "reports")
-    addDoc(reportsRef, reportData)
-      .then(() => {
-        toast({
-          title: "Report submitted",
-          description: "The moderation team has received your report."
-        })
-        setIsReportDialogOpen(false)
-        setReportReason("")
-      })
-      .catch(async (error) => {
-        errorEmitter.emit("permission-error", new FirestorePermissionError({
-          path: "reports",
-          operation: "create",
-          requestResourceData: reportData
-        }))
-      })
-      .finally(() => setIsReporting(false))
-  }
-
-  const handleActionFriend = async (action: 'add' | 'remove' | 'accept' | 'decline' | 'cancel') => {
+  const handleActionFriend = async (action: 'add' | 'remove' | 'accept' | 'cancel') => {
     if (!db || !user || !profileUser) return
-    
     if (action === 'add') {
-      if (totalFriendsCount >= 20) {
-        toast({ variant: "destructive", title: "Limit reached", description: "You can only have 20 friends." })
-        return
-      }
       addDoc(collection(db, "friendships"), {
         user1: user.uid < profileUser.id ? user.uid : profileUser.id,
         user2: user.uid < profileUser.id ? profileUser.id : user.uid,
@@ -229,31 +168,32 @@ export default function ProfilePage() {
         bestFriendOf: [],
         createdAt: new Date().toISOString()
       })
-      toast({ title: "Request sent" })
-    } else if (action === 'accept') {
-      if (friendship) {
-        updateDoc(doc(db, "friendships", friendship.id), {
-          status: 'accepted',
-          createdAt: new Date().toISOString()
-        })
-        
-        if (currentUserData && !currentUserData.badges?.includes("friendship")) {
-          updateDoc(doc(db, "users", user.uid), {
-            badges: arrayUnion("friendship")
-          })
-        }
-
-        toast({ title: "Request accepted" })
-      }
-    } else if (action === 'remove' || action === 'decline' || action === 'cancel') {
-      if (friendship) {
-        deleteDoc(doc(db, "friendships", friendship.id))
-        toast({ title: action === 'remove' ? "Friend removed" : "Request cleared" })
-      }
+      toast({ title: "Friend request sent" })
+    } else if (action === 'accept' && friendship) {
+      updateDoc(doc(db, "friendships", friendship.id), { status: 'accepted' })
+      toast({ title: "Friendship accepted" })
+    } else if (friendship) {
+      deleteDoc(doc(db, "friendships", friendship.id))
+      toast({ title: "Action completed" })
     }
   }
 
-  if (isUserLoading || isLoading) {
+  const handleToggleFollow = async () => {
+    if (!db || !user || !profileUser) return
+    if (amIFollowing && myFollowList?.[0]) {
+      deleteDoc(doc(db, "follows", myFollowList[0].id))
+      toast({ title: "Unfollowed" })
+    } else {
+      addDoc(collection(db, "follows"), {
+        followerId: user.uid,
+        followingId: profileUser.id,
+        createdAt: new Date().toISOString()
+      })
+      toast({ title: "Following" })
+    }
+  }
+
+  if (isUserLoading || isUserLoadingDoc) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -261,185 +201,128 @@ export default function ProfilePage() {
     )
   }
 
-  if (!profileUser) return (
-    <main className="min-h-screen bg-background w-full pt-24 px-6 text-center">
-      <NavigationBar />
-      <div className="max-w-xl mx-auto space-y-6">
-        <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto" />
-        <h1 className="text-2xl sm:text-3xl font-headline font-bold">User not found</h1>
-        <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 font-bold text-xs">
-          <ArrowLeft className="h-4 w-4" /> Back Home
-        </Button>
-      </div>
-    </main>
-  )
-
-  const isPermBanned = profileUser.isBanned && profileUser.banType === 'perm'
-  if (isPermBanned) return (
-    <main className="min-h-screen bg-background w-full pt-24 px-6 text-center">
-      <NavigationBar />
-      <div className="max-w-xl mx-auto space-y-6 animate-fade-in">
-        <ShieldAlert className="h-16 w-16 text-destructive mx-auto" />
-        <h1 className="text-2xl sm:text-3xl font-headline font-bold tracking-tighter">Account terminated</h1>
-        <p className="text-muted-foreground font-body text-sm sm:text-base">This profile is no longer available.</p>
-        <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 font-bold text-xs">
-          <ArrowLeft className="h-4 w-4" /> Back home
-        </Button>
-      </div>
-    </main>
-  )
+  if (!profileUser) return <div>User not found</div>
 
   const isOwnProfile = user?.uid === profileUser.id
-  const joinDate = profileUser.createdAt ? new Date(profileUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Recently"
-
-  const isAccepted = friendship?.status === 'accepted'
-  const isPending = friendship?.status === 'pending'
-  const wasSentByMe = friendship?.requestSentBy === user?.uid
 
   return (
-    <main className="min-h-screen bg-background w-full pt-24 pb-20 px-4 sm:px-6">
+    <main className="min-h-screen bg-background w-full pt-24 pb-20 px-4">
       <NavigationBar />
       <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
         <div className="flex items-center justify-between">
-          <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full hover:bg-accent shrink-0"><ArrowLeft className="h-6 w-6" /></Button>
+          <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full">
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
           {!isOwnProfile && (
-            <div className="flex gap-2">
-              {isAccepted ? (
-                <Button onClick={() => handleActionFriend('remove')} variant="outline" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6">
-                  <UserMinus className="h-4 w-4" /> Remove friend
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="rounded-full">
+                  <MoreVertical className="h-5 w-5" />
                 </Button>
-              ) : isPending ? (
-                wasSentByMe ? (
-                  <Button onClick={() => handleActionFriend('cancel')} variant="secondary" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6">
-                    <UserX className="h-4 w-4" /> Cancel request
-                  </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-card border-border rounded-xl">
+                {friendship?.status === 'accepted' ? (
+                  <DropdownMenuItem onClick={() => handleActionFriend('remove')} className="text-destructive font-bold uppercase text-[10px]">
+                    <UserMinus className="h-4 w-4 mr-2" /> Unfriend
+                  </DropdownMenuItem>
+                ) : friendship?.status === 'pending' ? (
+                  friendship.requestSentBy === user?.uid ? (
+                    <DropdownMenuItem onClick={() => handleActionFriend('cancel')} className="font-bold uppercase text-[10px]">
+                      <X className="h-4 w-4 mr-2" /> Cancel Request
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => handleActionFriend('accept')} className="font-bold uppercase text-[10px] text-primary">
+                      <Check className="h-4 w-4 mr-2" /> Accept Friend
+                    </DropdownMenuItem>
+                  )
                 ) : (
-                  <>
-                    <Button onClick={() => handleActionFriend('accept')} variant="default" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6">
-                      <UserCheck className="h-4 w-4" /> Accept
-                    </Button>
-                    <Button onClick={() => handleActionFriend('decline')} variant="outline" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6 text-destructive">
-                      <X className="h-4 w-4" /> Decline
-                    </Button>
-                  </>
-                )
-              ) : (
-                <Button onClick={() => handleActionFriend('add')} variant="default" className="font-headline font-bold text-xs gap-2 rounded-full h-10 px-6">
-                  <UserPlus className="h-4 w-4" /> Add friend
-                </Button>
-              )}
-            </div>
+                  <DropdownMenuItem onClick={() => handleActionFriend('add')} className="font-bold uppercase text-[10px]">
+                    <UserPlus className="h-4 w-4 mr-2" /> Add Friend
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={handleToggleFollow} className="font-bold uppercase text-[10px]">
+                  <Wifi className="h-4 w-4 mr-2" /> {amIFollowing ? "Unfollow" : "Follow"}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive font-bold uppercase text-[10px]">
+                  <Flag className="h-4 w-4 mr-2" /> Report
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 
-        <div className="space-y-8">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center border-2 border-primary/20 shrink-0 relative">
-              <User className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-              {friendship?.bestFriendOf?.includes(user?.uid) && (
-                <div className="absolute -top-1 -right-1">
-                  <Star className="h-5 w-5 text-yellow-500 fill-yellow-500 drop-shadow-sm" />
+        <div className="space-y-6">
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center border-2 border-primary/20 relative">
+              <User className="h-10 w-10 text-primary" />
+              {profileUser.isVerified && (
+                <div className="absolute -bottom-1 -right-1">
+                  <VerifiedBadge className="h-6 w-6" />
                 </div>
               )}
             </div>
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-2 truncate">
-                <h1 className="text-2xl sm:text-4xl font-headline font-bold tracking-tighter flex items-center gap-2 truncate">
-                  {profileUser.username}
-                </h1>
-                {profileUser.isPremium && <PremiumBadge className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />}
-                {profileUser.isVerified && <VerifiedBadge className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />}
-                {profileUser.isAdmin && <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-headline font-bold uppercase tracking-tight">{profileUser.username}</h1>
+                {profileUser.isPremium && <PremiumBadge className="h-6 w-6" />}
+                {profileUser.isAdmin && <ShieldCheck className="h-5 w-5 text-primary" />}
               </div>
+              <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">#{profileUser.sequentialId}</p>
             </div>
           </div>
 
-          <div className="space-y-10 pt-4">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Description</h3>
-                  {isOwnProfile && !isEditingDescription && <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full shrink-0" onClick={() => setIsEditingDescription(true)}><Pencil className="h-3 w-3" /></Button>}
-                </div>
-                {isEditingDescription ? (
-                  <div className="space-y-3">
-                    <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Write something..." className="min-h-[100px] bg-card border-primary/20 text-sm w-full" />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleUpdateDescription} disabled={isSavingDescription} className="font-headline font-bold text-xs flex-1 sm:flex-none">{isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />} Save</Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setIsEditingDescription(false); setNewDescription(profileUser.description || ""); }} className="font-headline font-bold text-xs flex-1 sm:flex-none">Cancel</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-base sm:text-lg text-foreground/80 leading-relaxed font-body whitespace-pre-wrap break-words w-full">{profileUser.description || "No description set."}</p>
-                )}
-              </div>
-
-              <div className="space-y-3 pt-2">
-                <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Friends</h3>
-                <div className="flex flex-wrap gap-4">
-                  {profileFriends?.map(friend => (
-                    <Link key={friend.id} href={`/profile/${friend.sequentialId}`}>
-                      <div className="flex flex-col items-center gap-2 group cursor-pointer transition-transform hover:scale-105">
-                        <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center border-2 border-transparent group-hover:border-primary/50 transition-all shadow-sm overflow-hidden">
-                          <User className="h-6 w-6 text-muted-foreground group-hover:text-primary" />
-                        </div>
-                        <span className="text-[10px] font-headline font-bold text-muted-foreground group-hover:text-primary truncate max-w-[64px] text-center">
-                          {friend.username}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                  {(!profileFriends || profileFriends.length === 0) && !isProfileFriendsLoading && (
-                    <span className="text-[10px] text-muted-foreground/40 italic">No connections found.</span>
-                  )}
-                  {isProfileFriendsLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                </div>
-              </div>
-
-              <div className="flex flex-col items-start gap-3 pt-2">
-                <h3 className="text-[10px] font-headline font-bold text-muted-foreground">Achievements</h3>
-                <div className="flex flex-wrap gap-2">
-                  {profileUser.badges?.map((badgeId: string) => {
-                    const badge = BADGE_MAP[badgeId]
-                    if (!badge) return null
-                    return (
-                      <Link key={badgeId} href="/badges">
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all cursor-pointer shadow-sm group">
-                          <badge.icon className={cn("h-3.5 w-3.5", badge.color)} />
-                          <span className="text-[9px] font-headline font-bold group-hover:text-primary">{badge.name}</span>
-                        </div>
-                      </Link>
-                    )
-                  })}
-                  {(!profileUser.badges || profileUser.badges.length === 0) && (
-                    <span className="text-[10px] text-muted-foreground/40 italic">No achievements yet.</span>
-                  )}
-                </div>
-              </div>
+          <div className="flex gap-8 py-4 border-y border-border/50 overflow-x-auto scrollbar-hide">
+            <div className="text-center">
+              <p className="text-xl font-headline font-bold">{friendsCount}</p>
+              <p className="text-[8px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Friends</p>
             </div>
+            <div className="text-center">
+              <p className="text-xl font-headline font-bold">{followersCount}</p>
+              <p className="text-[8px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Followers</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-headline font-bold">{followingCount}</p>
+              <p className="text-[8px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Following</p>
+            </div>
+          </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-8 border-t border-border/30 gap-6">
-              <div className="flex flex-col items-start gap-1">
-                <span className="text-[10px] font-headline font-bold text-muted-foreground">Joined since</span>
-                <div className="flex items-center gap-1.5 text-foreground/60"><Clock className="h-3 w-3" /><span className="text-sm font-medium">{joinDate}</span></div>
-              </div>
-
-              {!isOwnProfile && (
-                <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive gap-2 font-headline text-[10px] font-bold h-auto p-0 group"><Flag className="h-3 w-3 group-hover:fill-destructive" /> Report profile</Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-background border-border w-[95vw] rounded-3xl sm:max-w-[425px]">
-                    <DialogHeader><DialogTitle className="font-headline font-bold text-2xl">Report profile</DialogTitle><DialogDescription>Explain why this profile violates standards.</DialogDescription></DialogHeader>
-                    <div className="py-6 space-y-4">
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground">Part of profile</label><Select value={reportTarget} onValueChange={(val: any) => setReportTarget(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="Select target" /></SelectTrigger><SelectContent><SelectItem value="username">Username</SelectItem><SelectItem value="description">Description</SelectItem></SelectContent></Select></div>
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground">Violation category</label><Select value={reportCategory} onValueChange={(val: any) => setReportCategory(val)}><SelectTrigger className="bg-muted/20 h-12"><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent><SelectItem value="sexual">Sexual content</SelectItem><SelectItem value="inappropriate">Inappropriate behavior</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
-                      <div className="space-y-2"><label className="text-[10px] font-headline font-bold text-muted-foreground">Details</label><Textarea placeholder="Describe the issue..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="min-h-[120px] bg-muted/20 text-sm" /></div>
-                    </div>
-                    <DialogFooter><Button onClick={handleReport} disabled={isReporting || !reportReason || !currentUserData} variant="destructive" className="w-full h-12 font-headline font-bold text-xs">{isReporting ? "Reporting..." : "Submit report"}</Button></DialogFooter>
-                  </DialogContent>
-                </Dialog>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Description</h3>
+              {isOwnProfile && (
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setIsEditingDescription(true)}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
               )}
+            </div>
+            {isEditingDescription ? (
+              <div className="space-y-3">
+                <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="min-h-[100px]" />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleUpdateDescription} disabled={isSavingDescription}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsEditingDescription(false)}>Cancel</Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm font-body leading-relaxed">{profileUser.description || "Digital silence..."}</p>
+            )}
+          </div>
+
+          <div className="pt-6">
+            <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest mb-4">Achievements</h3>
+            <div className="flex flex-wrap gap-2">
+              {profileUser.badges?.map((bid: string) => {
+                const badge = BADGE_MAP[bid]
+                if (!badge) return null
+                return (
+                  <Link key={bid} href="/badges">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border">
+                      <badge.icon className={cn("h-3 w-3", badge.color)} />
+                      <span className="text-[9px] font-headline font-bold">{badge.name}</span>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </div>
         </div>

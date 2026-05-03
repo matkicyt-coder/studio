@@ -1,14 +1,14 @@
 
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
-import { Settings, Coins, Home, Search, ShieldCheck, User, LogOut, Crown, Plus, ShoppingBag } from "lucide-react"
+import { Settings, Coins, Home, Search, User, LogOut, Crown, Plus, ShoppingBag } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
-import { doc, updateDoc, increment, collection, query, limit } from "firebase/firestore"
+import { doc, updateDoc, increment, collection, query, limit, addDoc } from "firebase/firestore"
 import { signOut } from "firebase/auth"
-import { formatCurrency, cn, calculateAge } from "@/lib/utils"
+import { formatCurrency, cn } from "@/lib/utils"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { PremiumBadge } from "@/components/premium-badge"
 import {
@@ -28,8 +28,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { errorEmitter } from "@/firebase/error-emitter"
-import { FirestorePermissionError } from "@/firebase/errors"
 
 export function NavigationBar() {
   const { user, isUserLoading } = useUser()
@@ -48,225 +46,101 @@ export function NavigationBar() {
     if (!db || !user?.uid) return null
     return doc(db, "users", user.uid)
   }, [db, user?.uid])
-
   const { data: userData } = useDoc(userDocRef)
-
-  const age = useMemo(() => calculateAge(userData?.dateOfBirth), [userData?.dateOfBirth])
-  const isParentalMode = age > 0 && age < 18
 
   const usersRef = useMemoFirebase(() => {
     if (!db || isUserLoading || !user) return null
     return query(collection(db, "users"), limit(100))
   }, [db, isUserLoading, user])
-  
   const { data: allUsers } = useCollection(usersRef)
 
   const filteredUsers = searchQuery.trim().length > 0 
-    ? allUsers?.filter(u => 
-        u.username?.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 5)
+    ? allUsers?.filter(u => u.username?.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5)
     : []
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setIsSearchOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
   const handleBuy = (amount: number) => {
-    if (!userDocRef) return
-    if (isParentalMode) {
-      toast({
-        variant: "destructive",
-        title: "Purchase Restricted",
-        description: "Accounts under 18 are not permitted to process transactions.",
-      })
-      return
-    }
+    if (!userDocRef || !db) return
     const updateData = { coins: increment(amount) }
-    updateDoc(userDocRef, updateData)
-      .then(() => {
-        toast({
-          title: "Purchase Successful",
-          description: "Thank you, your purchase has been completed and added to your balance",
-        })
+    updateDoc(userDocRef, updateData).then(() => {
+      addDoc(collection(db, "transactions"), {
+        userId: user!.uid,
+        amount: amount,
+        type: "coin_purchase",
+        createdAt: new Date().toISOString()
       })
-      .catch(async (error) => {
-        errorEmitter.emit("permission-error", new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: "update",
-          requestResourceData: updateData,
-        }))
-      })
+      toast({ title: "Coins Added!" })
+    })
   }
 
-  const handleLogout = async () => {
-    await signOut(auth)
-    router.push("/login")
-  }
-
-  const coinBalance = userData?.coins ?? 0
+  if (isUserLoading || !user) return null
 
   return (
     <>
-      {/* Top Header for Search & Coins (Always visible) */}
-      <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border/50 bg-background/80 backdrop-blur-md z-50 px-4 flex items-center shadow-sm">
+      <nav className="fixed top-0 left-0 right-0 h-16 border-b bg-background/80 backdrop-blur-md z-50 px-4 flex items-center shadow-sm">
         <div className="flex items-center justify-between w-full max-w-7xl mx-auto gap-3">
-          <Link href="/home" className="hidden sm:flex p-2 rounded-full hover:bg-accent transition-colors shrink-0">
-            <Home className="h-6 w-6" />
-          </Link>
-
+          <Link href="/home" className="hidden sm:flex p-2 rounded-full hover:bg-accent"><Home className="h-6 w-6" /></Link>
           <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-start sm:justify-end">
             <div className="relative flex-1 max-w-[400px]" ref={searchRef}>
               <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search portal..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setIsSearchOpen(true)
-                  }}
+                  onChange={(e) => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
                   onFocus={() => setIsSearchOpen(true)}
-                  className="w-full pl-9 h-10 bg-muted/50 border-transparent rounded-full text-sm focus:bg-background transition-all"
+                  className="w-full pl-9 h-10 bg-muted/50 rounded-full text-sm"
                 />
               </div>
-              
               {isSearchOpen && filteredUsers && filteredUsers.length > 0 && (
-                <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-2xl shadow-xl overflow-hidden animate-fade-in z-[60] min-w-[240px]">
-                  <div className="py-2">
-                    {filteredUsers.map((u) => {
-                      const isPermBanned = u.isBanned && u.banType === 'perm'
-                      return (
-                        <button
-                          key={u.id}
-                          onClick={() => {
-                            router.push(`/profile/${u.sequentialId}`)
-                            setIsSearchOpen(false)
-                            setSearchQuery("")
-                          }}
-                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors text-left"
-                        >
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <div className="flex items-center gap-1.5 truncate">
-                              <span className={cn(
-                                "font-medium text-sm flex items-center gap-1.5 truncate",
-                                isPermBanned && "text-muted-foreground italic line-through"
-                              )}>
-                                {isPermBanned ? "CONTENT DELETED" : u.username}
-                              </span>
-                              {!isPermBanned && u.isPremium && <PremiumBadge className="h-3 w-3 shrink-0" />}
-                              {!isPermBanned && u.isVerified && <VerifiedBadge className="h-3.5 w-3.5 shrink-0" />}
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-headline text-muted-foreground shrink-0 ml-2">#{u.sequentialId}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                <div className="absolute top-full mt-2 left-0 right-0 bg-card border rounded-2xl shadow-xl z-50 overflow-hidden">
+                  {filteredUsers.map((u) => (
+                    <button key={u.id} onClick={() => { router.push(`/profile/${u.sequentialId}`); setIsSearchOpen(false); setSearchQuery(""); }} className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent">
+                      <span className="text-sm font-medium">{u.username}</span>
+                      <span className="text-[10px] text-muted-foreground">#{u.sequentialId}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-
             <Dialog open={isShopOpen} onOpenChange={setIsShopOpen}>
               <DialogTrigger asChild>
-                <button className={cn(
-                  "flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border border-border transition-all font-bold shadow-sm shrink-0 hover:bg-accent",
-                  userData?.isPremium && "border-amber-500/50 shadow-amber-500/10"
-                )}>
-                  <Coins className={cn("h-4 w-4", userData?.isPremium ? "text-amber-500" : "text-primary")} />
-                  <span className="font-headline text-xs sm:text-sm">{formatCurrency(coinBalance)}</span>
+                <button className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border transition-all hover:bg-accent">
+                  <Coins className="h-4 w-4 text-primary" />
+                  <span className="font-headline text-xs">{formatCurrency(userData?.coins || 0)}</span>
                 </button>
               </DialogTrigger>
-              <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Portal Shop</DialogTitle>
-                  <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {isParentalMode ? "Purchases restricted in Parental Mode." : "Manage your coins and membership."}
-                  </DialogDescription>
-                </DialogHeader>
+              <DialogContent className="rounded-[40px] max-w-md">
+                <DialogHeader><DialogTitle className="text-2xl font-headline font-bold uppercase">Portal Shop</DialogTitle></DialogHeader>
                 <div className="grid gap-3 py-4">
-                  {[100, 500, 1000, 5000].map((amount) => (
-                    <div key={amount} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
-                      <div className="flex items-center gap-3">
-                        <Coins className="h-5 w-5 text-primary" />
-                        <span className="font-bold text-lg font-headline">{amount} Coins</span>
-                      </div>
-                      <Button onClick={() => handleBuy(amount)} disabled={isParentalMode} size="sm" className="font-bold font-headline uppercase text-xs">$0.00</Button>
+                  {[100, 500, 1000].map(amt => (
+                    <div key={amt} className="flex items-center justify-between p-4 bg-muted/30 rounded-2xl border">
+                      <div className="flex items-center gap-3"><Coins className="h-5 w-5 text-primary" /><span className="font-bold">{amt} Coins</span></div>
+                      <Button onClick={() => handleBuy(amt)} size="sm">FREE</Button>
                     </div>
                   ))}
-                  
-                  <div className="pt-4 border-t border-border mt-2">
-                    <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest mb-3 text-center">Membership</p>
-                    <Button 
-                      onClick={() => {
-                        setIsShopOpen(false);
-                        router.push("/premium");
-                      }} 
-                      className={cn(
-                        "w-full h-14 font-headline font-bold uppercase tracking-tighter gap-2 rounded-xl shadow-lg transition-all active:scale-95",
-                        userData?.isPremium 
-                          ? "bg-secondary text-secondary-foreground" 
-                          : "bg-amber-500 hover:bg-amber-600 text-white"
-                      )}
-                    >
-                      <Crown className="h-5 w-5" /> 
-                      {userData?.isPremium ? "Premium Dashboard" : "Become Premium"}
+                  <div className="pt-4 border-t mt-4">
+                    <Button onClick={() => { setIsShopOpen(false); router.push("/premium"); }} className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-bold uppercase tracking-tighter rounded-2xl">
+                      <Crown className="h-5 w-5 mr-2" /> {userData?.isPremium ? "Premium Active" : "Become Premium"}
                     </Button>
                   </div>
                 </div>
               </DialogContent>
             </Dialog>
-            
-            <div className="hidden sm:block">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="p-2 rounded-full hover:bg-accent transition-colors"><Settings className="h-6 w-6" /></button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-card border-border rounded-2xl p-2 shadow-xl">
-                  <DropdownMenuItem onClick={() => router.push("/settings")} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer">
-                    <Settings className="h-4 w-4" /><span className="font-headline font-bold text-[10px] uppercase tracking-widest">Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer text-destructive">
-                    <LogOut className="h-4 w-4" /><span className="font-headline font-bold text-[10px] uppercase tracking-widest">Logout</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><button className="p-2 rounded-full hover:bg-accent"><Settings className="h-6 w-6" /></button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 rounded-2xl">
+                <DropdownMenuItem onClick={() => router.push("/settings")} className="p-3 cursor-pointer uppercase text-[10px] font-bold"><Settings className="h-4 w-4 mr-2" /> Settings</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => signOut(auth)} className="p-3 cursor-pointer text-destructive uppercase text-[10px] font-bold"><LogOut className="h-4 w-4 mr-2" /> Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </nav>
-
-      {/* Bottom Tab Bar for Mobile */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 h-16 bg-background/95 backdrop-blur-md border-t border-border/50 z-50 flex items-center justify-around px-2">
-        <Link href="/home" className={cn("flex flex-col items-center gap-1 p-2 rounded-xl transition-all", pathname === '/home' ? "text-primary" : "text-muted-foreground")}>
-          <Home className="h-5 w-5" />
-          <span className="text-[9px] font-headline font-bold uppercase tracking-widest">Home</span>
-        </Link>
-        <button 
-          onClick={() => setIsShopOpen(true)}
-          className={cn("flex flex-col items-center gap-1 p-2 rounded-xl transition-all", isShopOpen ? "text-primary" : "text-muted-foreground")}
-        >
-          <ShoppingBag className="h-5 w-5" />
-          <span className="text-[9px] font-headline font-bold uppercase tracking-widest">Shop</span>
-        </button>
-        <Link href="/friends" className={cn("flex flex-col items-center gap-1 p-2 rounded-xl transition-all", pathname === '/friends' ? "text-primary" : "text-muted-foreground")}>
-          <Plus className="h-5 w-5" />
-          <span className="text-[9px] font-headline font-bold uppercase tracking-widest">Social</span>
-        </Link>
-        <Link href={`/profile/${userData?.sequentialId}`} className={cn("flex flex-col items-center gap-1 p-2 rounded-xl transition-all", pathname.startsWith('/profile') ? "text-primary" : "text-muted-foreground")}>
-          <User className="h-5 w-5" />
-          <span className="text-[9px] font-headline font-bold uppercase tracking-widest">Me</span>
-        </Link>
-        <Link href="/settings" className={cn("flex flex-col items-center gap-1 p-2 rounded-xl transition-all", pathname === '/settings' ? "text-primary" : "text-muted-foreground")}>
-          <Settings className="h-5 w-5" />
-          <span className="text-[9px] font-headline font-bold uppercase tracking-widest">Admin</span>
-        </Link>
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 h-16 bg-background/95 backdrop-blur-md border-t z-50 flex items-center justify-around">
+        <Link href="/home" className="flex flex-col items-center p-2"><Home className="h-5 w-5" /><span className="text-[8px] font-bold uppercase">Home</span></Link>
+        <button onClick={() => setIsShopOpen(true)} className="flex flex-col items-center p-2"><ShoppingBag className="h-5 w-5" /><span className="text-[8px] font-bold uppercase">Shop</span></button>
+        <Link href="/friends" className="flex flex-col items-center p-2"><Plus className="h-5 w-5" /><span className="text-[8px] font-bold uppercase">Social</span></Link>
+        <Link href={`/profile/${userData?.sequentialId}`} className="flex flex-col items-center p-2"><User className="h-5 w-5" /><span className="text-[8px] font-bold uppercase">Me</span></Link>
       </nav>
     </>
   )
