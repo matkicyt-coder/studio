@@ -8,7 +8,7 @@ import { NavigationBar } from "@/components/navigation-bar"
 import { doc, updateDoc, increment, arrayUnion, collection, addDoc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ShieldCheck, LogOut, ArrowLeft, Mail, Calendar, Lock } from "lucide-react"
+import { ShieldCheck, LogOut, ArrowLeft, Mail, Calendar, Lock, Moon, Sun } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { calculateAge } from "@/lib/utils"
@@ -23,6 +23,7 @@ export default function SettingsPage() {
 
   const [newUsername, setNewUsername] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false)
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !userDocId) return null
@@ -33,6 +34,23 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!isUserLoading && !user) router.push("/login")
   }, [user, isUserLoading, router])
+
+  // Initial theme sync
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsDarkMode(document.documentElement.classList.contains('dark'))
+    }
+  }, [])
+
+  const toggleTheme = () => {
+    const newMode = !isDarkMode
+    setIsDarkMode(newMode)
+    if (newMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }
 
   const handlePasswordReset = async () => {
     if (!user?.email) return
@@ -93,8 +111,20 @@ export default function SettingsPage() {
         </div>
 
         <div className="p-6 bg-card border rounded-3xl space-y-8 shadow-sm">
-          {/* Account Identity Section */}
-          <div className="space-y-4">
+          {/* Theme Section */}
+          <section className="space-y-4">
+            <h2 className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground">Appearance</h2>
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+              <span className="text-xs font-bold uppercase">Portal Mode</span>
+              <Button onClick={toggleTheme} variant="ghost" size="sm" className="rounded-full gap-2 font-bold text-[10px] uppercase">
+                {isDarkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {isDarkMode ? "Dark Mode" : "Light Mode"}
+              </Button>
+            </div>
+          </section>
+
+          {/* Account Section */}
+          <section className="space-y-4 pt-6 border-t">
             <h2 className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground">Account Info</h2>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
@@ -112,10 +142,10 @@ export default function SettingsPage() {
                 <span className="text-xs text-muted-foreground">{age} ({userData?.dateOfBirth})</span>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* Security Section */}
-          <div className="space-y-4 pt-6 border-t">
+          <section className="space-y-4 pt-6 border-t">
             <h2 className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground">Security</h2>
             <Button 
               onClick={handlePasswordReset} 
@@ -125,10 +155,10 @@ export default function SettingsPage() {
             >
               <Lock className="h-4 w-4 mr-2" /> Reset Password Via Email
             </Button>
-          </div>
+          </section>
 
           {/* Username Change Section */}
-          <div className="space-y-4 pt-6 border-t">
+          <section className="space-y-4 pt-6 border-t">
             <h2 className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground">Change Username (1,000 Coins)</h2>
             <div className="flex gap-2">
               <Input 
@@ -139,7 +169,7 @@ export default function SettingsPage() {
               />
               <Button onClick={handleUpdateUsername} disabled={isUpdating} className="rounded-xl px-6">Apply</Button>
             </div>
-          </div>
+          </section>
 
           {userData?.isAdmin && (
             <div className="pt-6 border-t">
@@ -151,7 +181,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <div className="pt-6 border-t">
+          <div className="pt-6 border-t text-center">
             <Button 
               variant="destructive" 
               className="w-full rounded-xl font-bold uppercase text-[10px] tracking-widest"
@@ -165,3 +195,4 @@ export default function SettingsPage() {
     </main>
   )
 }
+
