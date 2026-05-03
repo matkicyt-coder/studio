@@ -8,9 +8,11 @@ import { NavigationBar } from "@/components/navigation-bar"
 import { doc, updateDoc, increment, arrayUnion, collection, query, where, addDoc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, ShieldCheck, Wifi, Settings as SettingsIcon, LogOut, ArrowLeft } from "lucide-react"
+import { Pencil, ShieldCheck, Wifi, Settings as SettingsIcon, LogOut, ArrowLeft, Mail, Calendar, Lock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
+import { calculateAge } from "@/lib/utils"
+import { sendPasswordResetEmail } from "firebase/auth"
 
 export default function SettingsPage() {
   const { user, userDocId, isUserLoading } = useUser()
@@ -38,6 +40,26 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!isUserLoading && !user) router.push("/login")
   }, [user, isUserLoading, router])
+
+  const handlePasswordReset = async () => {
+    if (!user?.email) return
+    setIsUpdating(true)
+    try {
+      await sendPasswordResetEmail(auth, user.email)
+      toast({ 
+        title: "RESET EMAIL SENT", 
+        description: "CHECK YOUR INBOX TO UPDATE YOUR PASSWORD." 
+      })
+    } catch (e: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "ERROR", 
+        description: e.message 
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   const handleVerificationRequest = async () => {
     if (!db || !userDocId || !userData) return
@@ -85,17 +107,56 @@ export default function SettingsPage() {
 
   if (isUserLoading || !user) return null
 
+  const age = calculateAge(userData?.dateOfBirth)
+
   return (
     <main className="min-h-screen bg-background pt-24 px-4 pb-20">
       <NavigationBar />
       <div className="max-w-xl mx-auto space-y-8 animate-fade-in">
         <div className="flex items-center gap-4">
-          <Button onClick={() => router.push("/home")} variant="ghost" size="icon" className="rounded-full"><ArrowLeft className="h-6 w-6" /></Button>
+          <Button onClick={() => router.push("/home")} variant="ghost" size="icon" className="rounded-full">
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
           <h1 className="text-3xl font-headline font-bold uppercase tracking-tight">Settings</h1>
         </div>
 
-        <div className="p-6 bg-card border rounded-3xl space-y-6 shadow-sm">
+        <div className="p-6 bg-card border rounded-3xl space-y-8 shadow-sm">
+          {/* Account Identity Section */}
           <div className="space-y-4">
+            <h2 className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground">Account Info</h2>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold uppercase">Email</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{user.email}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold uppercase">Age</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{age} ({userData?.dateOfBirth})</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Security Section */}
+          <div className="space-y-4 pt-6 border-t">
+            <h2 className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground">Security</h2>
+            <Button 
+              onClick={handlePasswordReset} 
+              disabled={isUpdating} 
+              variant="outline" 
+              className="w-full h-12 rounded-xl font-bold uppercase text-[10px] tracking-widest"
+            >
+              <Lock className="h-4 w-4 mr-2" /> Reset Password Via Email
+            </Button>
+          </div>
+
+          {/* Username Change Section */}
+          <div className="space-y-4 pt-6 border-t">
             <h2 className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground">Change Username (1,000 Coins)</h2>
             <div className="flex gap-2">
               <Input 
@@ -108,6 +169,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Verification Section */}
           <div className="pt-6 border-t space-y-4">
             <h2 className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground">Verification</h2>
             <div className="flex items-center justify-between">
