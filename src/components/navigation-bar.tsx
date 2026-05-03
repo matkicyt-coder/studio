@@ -42,7 +42,7 @@ export function NavigationBar() {
       .then(() => {
         toast({
           title: "Purchase Successful",
-          description: `Successfully added ${amount} coins to your account.`,
+          description: "thank you your purchase has been completed and added to your balance",
         })
       })
       .catch(async (error) => {
@@ -57,7 +57,7 @@ export function NavigationBar() {
   const coinBalance = userData?.coins ?? 0
 
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border/50 bg-background/80 backdrop-blur-md z-50 px-6 flex items-center">
+    <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border/50 bg-secondary/80 backdrop-blur-md z-50 px-6 flex items-center">
       <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
         {/* Left Side: Home Button */}
         <Link 
@@ -72,7 +72,7 @@ export function NavigationBar() {
         <div className="flex items-center gap-4">
           <Dialog>
             <DialogTrigger asChild>
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 transition-colors font-headline font-bold">
+              <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background border border-border hover:bg-accent transition-colors font-headline font-bold shadow-sm">
                 <Coins className="h-4 w-4 text-yellow-500" />
                 <span>{formatCurrency(coinBalance)}</span>
               </button>
