@@ -32,12 +32,9 @@ export default function HomePage() {
     <main className="min-h-screen bg-black w-full pt-16">
       <NavigationBar />
       <div className="p-8 text-white animate-fade-in">
-        <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase">
+        <h1 className="text-4xl font-headline font-bold tracking-tighter">
           Welcome, {userData?.username || "..."}!
         </h1>
-        <p className="mt-2 text-zinc-500 font-medium tracking-wide">
-          Your digital terminal is active.
-        </p>
       </div>
     </main>
   )
