@@ -3,7 +3,7 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore'
+import { initializeFirestore, Firestore } from 'firebase/firestore'
 
 let cachedSdks: {
   firebaseApp: FirebaseApp;
@@ -28,10 +28,16 @@ export function initializeFirebase() {
     }
   }
 
+  // Use initializeFirestore with settings to force long polling,
+  // which helps with connectivity in some cloud workstation environments.
+  const firestore = initializeFirestore(firebaseApp, {
+    experimentalForceLongPolling: true,
+  });
+
   cachedSdks = {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    firestore: firestore
   };
 
   return cachedSdks;
@@ -41,7 +47,9 @@ export function getSdks(firebaseApp: FirebaseApp) {
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    firestore: initializeFirestore(firebaseApp, {
+      experimentalForceLongPolling: true,
+    })
   };
 }
 
