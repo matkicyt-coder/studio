@@ -15,13 +15,13 @@ import {
   Moon, 
   Sun, 
   ShieldCheck, 
-  LogOut, 
-  ShieldAlert
+  LogOut
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { sendPasswordResetEmail } from "firebase/auth"
+import { calculateAge } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -40,7 +40,6 @@ export default function SettingsPage() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   
-  // Field editing states
   const [editField, setEditField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
 
@@ -119,128 +118,129 @@ export default function SettingsPage() {
 
   if (isUserLoading || !user) return null
 
+  const userAge = calculateAge(userData?.dateOfBirth)
+  const isMinor = userAge > 0 && userAge < 18
+
   return (
-    <main className="min-h-screen bg-background pt-24 px-4 pb-20 overflow-x-hidden">
+    <main className="min-h-screen bg-background pt-20 px-4 pb-20 overflow-x-hidden">
       <NavigationBar />
       
-      <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
-        <div className="bg-card border rounded-[32px] p-8 md:p-12 space-y-12 shadow-2xl">
+      <div className="max-w-xl mx-auto space-y-6 animate-fade-in">
+        <div className="bg-card border rounded-[24px] p-6 md:p-10 space-y-10 shadow-lg">
           
           {/* IDENTITY SECTION */}
-          <section className="space-y-8">
-            <div className="space-y-1">
-              <h2 className="text-[10px] font-headline font-bold uppercase tracking-[0.2em] text-muted-foreground/60 border-b pb-4">Identity</h2>
-            </div>
+          <section className="space-y-6">
+            <h2 className="text-[10px] font-headline font-bold uppercase tracking-[0.2em] text-muted-foreground/60 border-b border-border/50 pb-2">Identity</h2>
 
             {/* Username Row */}
-            <div className="flex items-center justify-between group">
-              <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Username</p>
-                <p className="text-2xl font-headline font-bold">{userData?.username || "..."}</p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Username</p>
+                <p className="text-lg font-headline font-bold">{userData?.username || "..."}</p>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="rounded-full opacity-60 hover:opacity-100 hover:bg-accent"
+                className="h-8 w-8 rounded-full opacity-60 hover:opacity-100"
                 onClick={() => { setEditField("username"); setEditValue(userData?.username || ""); }}
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3.5 w-3.5" />
               </Button>
             </div>
 
             {/* Password Row */}
-            <div className="flex items-center justify-between group">
-              <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Password</p>
-                <p className="text-2xl font-headline font-bold">••••••••</p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Password</p>
+                <p className="text-lg font-headline font-bold tracking-widest">••••••••</p>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="rounded-full opacity-60 hover:opacity-100 hover:bg-accent"
+                className="h-8 w-8 rounded-full opacity-60 hover:opacity-100"
                 onClick={handlePasswordReset}
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3.5 w-3.5" />
               </Button>
             </div>
 
             {/* Email Row */}
-            <div className="flex items-center justify-between group">
-              <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Email Address</p>
-                <p className="text-2xl font-headline font-bold">{user.email}</p>
-                <button onClick={handlePasswordReset} className="flex items-center gap-1.5 text-[10px] font-headline font-bold uppercase text-blue-500 hover:text-blue-400 transition-colors">
-                  <RefreshCw className="h-3 w-3" /> Resend Link
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Email Address</p>
+                <p className="text-base font-headline font-bold">{user.email}</p>
+                <button onClick={handlePasswordReset} className="flex items-center gap-1 text-[8px] font-headline font-bold uppercase text-primary hover:opacity-80 transition-opacity">
+                  <RefreshCw className="h-2.5 w-2.5" /> Resend Link
                 </button>
               </div>
-              <Button variant="ghost" size="icon" className="rounded-full opacity-60 hover:opacity-100 hover:bg-accent" disabled>
-                <Pencil className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-30" disabled>
+                <Pencil className="h-3.5 w-3.5" />
               </Button>
             </div>
 
             {/* Phone Row */}
-            <div className="flex items-center justify-between group">
-              <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Phone Number</p>
-                <p className="text-2xl font-headline font-bold text-muted-foreground/40">{userData?.phoneNumber || "Not linked"}</p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Phone Number</p>
+                <p className="text-base font-headline font-bold text-muted-foreground/40">{userData?.phoneNumber || "Not linked"}</p>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="rounded-full opacity-60 hover:opacity-100 hover:bg-accent"
+                className="h-8 w-8 rounded-full opacity-60 hover:opacity-100"
                 onClick={() => { setEditField("phoneNumber"); setEditValue(userData?.phoneNumber || ""); }}
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3.5 w-3.5" />
               </Button>
             </div>
           </section>
 
           {/* HUB DISPLAY SECTION */}
-          <section className="space-y-8">
-            <div className="space-y-1">
-              <h2 className="text-[10px] font-headline font-bold uppercase tracking-[0.2em] text-muted-foreground/60 border-b pb-4">Hub Display</h2>
-            </div>
+          <section className="space-y-6">
+            <h2 className="text-[10px] font-headline font-bold uppercase tracking-[0.2em] text-muted-foreground/60 border-b border-border/50 pb-2">Hub Display</h2>
 
             {/* Birth Date Row */}
-            <div className="flex items-center justify-between group">
-              <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Birth Date</p>
-                <div className="flex items-center gap-3">
-                  <p className="text-2xl font-headline font-bold uppercase">{userData?.dateOfBirth || "NOT SET"}</p>
-                  <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 text-[8px] font-headline font-bold gap-1 px-2 py-0.5">
-                    <ShieldCheck className="h-3 w-3" /> Parental Mode Active
-                  </Badge>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Birth Date</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-lg font-headline font-bold uppercase">{userData?.dateOfBirth || "NOT SET"}</p>
+                  {isMinor && (
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 text-[7px] font-headline font-bold gap-1 px-1.5 py-0">
+                      <ShieldCheck className="h-2.5 w-2.5" /> Parental Mode Active
+                    </Badge>
+                  )}
                 </div>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="rounded-full opacity-60 hover:opacity-100 hover:bg-accent"
+                className="h-8 w-8 rounded-full opacity-60 hover:opacity-100"
                 onClick={() => { setEditField("dob"); setEditValue(userData?.dateOfBirth || ""); }}
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3.5 w-3.5" />
               </Button>
             </div>
 
             {/* Visual Mode Row */}
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-[10px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Visual Mode</p>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-headline font-bold uppercase tracking-widest text-muted-foreground/80">Visual Mode</p>
                 <div className="flex items-center gap-2">
-                  {isDarkMode ? <Moon className="h-5 w-5 text-blue-500" /> : <Sun className="h-5 w-5 text-yellow-500" />}
-                  <span className="text-xs font-headline font-bold uppercase tracking-tight">{isDarkMode ? "Dark Mode" : "Light Mode"}</span>
+                  {isDarkMode ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-yellow-500" />}
+                  <span className="text-[10px] font-headline font-bold uppercase tracking-tight">{isDarkMode ? "Dark Mode" : "Light Mode"}</span>
                 </div>
               </div>
-              <Switch checked={isDarkMode} onCheckedChange={toggleTheme} className="data-[state=checked]:bg-blue-500" />
+              <Switch checked={isDarkMode} onCheckedChange={toggleTheme} className="data-[state=checked]:bg-primary h-5 w-9" />
             </div>
           </section>
 
           {/* ADMIN ACTION */}
           {userData?.isAdmin && (
-            <div className="pt-8 border-t border-dashed">
+            <div className="pt-6 border-t border-dashed border-border/50">
               <Link href="/admin">
-                <Button variant="outline" className="w-full h-16 rounded-[20px] border-primary/40 text-primary hover:bg-primary/5 hover:border-primary font-headline font-bold uppercase tracking-widest gap-2">
-                  <ShieldCheck className="h-5 w-5" /> Admin Terminal Access
+                <Button variant="outline" className="w-full h-12 rounded-[12px] border-primary/20 text-primary hover:bg-primary/5 font-headline font-bold uppercase tracking-widest text-[10px] gap-2">
+                  <ShieldCheck className="h-4 w-4" /> Admin Terminal Access
                 </Button>
               </Link>
             </div>
@@ -249,10 +249,10 @@ export default function SettingsPage() {
           <div className="pt-4 text-center">
             <Button 
               variant="ghost" 
-              className="text-[10px] font-headline font-bold uppercase tracking-[0.3em] text-destructive hover:text-destructive hover:bg-destructive/10 px-8 h-12 rounded-full"
+              className="text-[9px] font-headline font-bold uppercase tracking-[0.2em] text-destructive hover:text-destructive hover:bg-destructive/5 h-10 px-6 rounded-full"
               onClick={() => auth.signOut()}
             >
-              <LogOut className="h-3 w-3 mr-2" /> Termination (Logout)
+              <LogOut className="h-3 w-3 mr-1.5" /> Termination (Logout)
             </Button>
           </div>
         </div>
@@ -260,27 +260,27 @@ export default function SettingsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editField} onOpenChange={(open) => !open && setEditField(null)}>
-        <DialogContent className="rounded-[32px] sm:max-w-md">
+        <DialogContent className="rounded-[24px] sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-headline font-bold uppercase tracking-tight">Update {editField === 'dob' ? 'Birth Date' : editField === 'phoneNumber' ? 'Phone' : editField}</DialogTitle>
+            <DialogTitle className="font-headline font-bold uppercase tracking-tight text-sm">Update {editField === 'dob' ? 'Birth Date' : editField === 'phoneNumber' ? 'Phone' : editField}</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-2">
             <Input 
               type={editField === "dob" ? "date" : "text"}
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
-              className="h-12 rounded-xl bg-muted/50 border-none font-medium"
+              className="h-10 rounded-xl bg-muted/30 border-none text-sm"
               placeholder={`Enter new ${editField}...`}
             />
             {editField === "username" && (
-              <p className="text-[9px] font-headline font-bold text-muted-foreground mt-2 uppercase tracking-widest px-1">
+              <p className="text-[8px] font-headline font-bold text-muted-foreground mt-2 uppercase tracking-widest px-1">
                 Note: Identity changes cost 1,000 COINS.
               </p>
             )}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setEditField(null)} className="rounded-xl">Cancel</Button>
-            <Button onClick={handleUpdateField} disabled={isUpdating} className="rounded-xl px-8">
+            <Button variant="ghost" onClick={() => setEditField(null)} className="rounded-lg h-9 text-xs">Cancel</Button>
+            <Button onClick={handleUpdateField} disabled={isUpdating} className="rounded-lg h-9 px-6 text-xs">
               Apply Changes
             </Button>
           </DialogFooter>
