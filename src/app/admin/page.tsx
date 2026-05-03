@@ -41,11 +41,26 @@ import {
   DialogTrigger,
   DialogFooter
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+
+const PREDEFINED_REASONS = [
+  "Exploiting & Cheating",
+  "Child Safety",
+  "Harassment",
+  "Inappropriate Content",
+  "Other"
+]
 
 export default function AdminPage() {
   const { user, isUserLoading } = useUser()
@@ -60,6 +75,12 @@ export default function AdminPage() {
   const [inspectingReportId, setInspectingReportId] = useState<string | null>(null)
   const [newSequentialId, setNewSequentialId] = useState("")
   const [coinAdjustment, setCoinAdjustment] = useState("")
+
+  // Sanction Reason State
+  const [isSanctionReasonDialogOpen, setIsSanctionReasonDialogOpen] = useState(false)
+  const [pendingSanction, setPendingSanction] = useState<{ userId: string, type: any, offensiveContent: string } | null>(null)
+  const [selectedReason, setSelectedReason] = useState("")
+  const [customReason, setCustomReason] = useState("")
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !user?.uid) return null
@@ -154,10 +175,24 @@ export default function AdminPage() {
       .finally(() => setIsUpdating(false))
   }
 
-  const handleApplyBan = async (targetUserId: string, type: 'warning' | 'temp-1' | 'temp-7' | 'perm', reason: string, offensiveContent?: string) => {
-    if (!db) return
+  const openSanctionReasonDialog = (userId: string, type: 'warning' | 'temp-1' | 'temp-7' | 'perm', offensiveContent?: string) => {
+    setPendingSanction({ userId, type, offensiveContent: offensiveContent || "" })
+    setIsSanctionReasonDialogOpen(true)
+    setSelectedReason("")
+    setCustomReason("")
+  }
+
+  const handleApplySanctionWithReason = async () => {
+    if (!db || !pendingSanction) return
+    const finalReason = selectedReason === "Other" ? customReason : selectedReason
+    if (!finalReason) {
+      toast({ variant: "destructive", title: "Reason required", description: "You must provide a reason for the sanction." })
+      return
+    }
+
     setIsUpdating(true)
-    const targetRef = doc(db, "users", targetUserId)
+    const { userId, type, offensiveContent } = pendingSanction
+    const targetRef = doc(db, "users", userId)
     
     let expiry = null
     if (type === 'temp-1') {
@@ -169,7 +204,7 @@ export default function AdminPage() {
     const updateData: any = {
       isBanned: type !== 'none',
       banType: type,
-      banReason: reason,
+      banReason: finalReason,
       banExpiry: expiry,
       banOffensiveContent: offensiveContent || "",
       needsToAcceptTerms: type === 'warning'
@@ -178,6 +213,8 @@ export default function AdminPage() {
     updateDoc(targetRef, updateData)
       .then(() => {
         toast({ title: "Sanction Applied", description: `User punished with ${type}.` })
+        setIsSanctionReasonDialogOpen(false)
+        setPendingSanction(null)
       })
       .catch(async (error) => {
         errorEmitter.emit("permission-error", new FirestorePermissionError({
@@ -512,7 +549,7 @@ export default function AdminPage() {
                             ) : (
                               <>
                                 <Button 
-                                  onClick={() => handleApplyBan(userItem.id, 'warning', "Direct admin warning.", userItem.description)}
+                                  onClick={() => openSanctionReasonDialog(userItem.id, 'warning', userItem.description)}
                                   disabled={isUpdating}
                                   variant="outline" 
                                   className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
@@ -520,7 +557,7 @@ export default function AdminPage() {
                                   <AlertTriangle className="h-3 w-3 text-yellow-500" /> Warn
                                 </Button>
                                 <Button 
-                                  onClick={() => handleApplyBan(userItem.id, 'perm', "Direct admin ban.", userItem.description)}
+                                  onClick={() => openSanctionReasonDialog(userItem.id, 'perm', userItem.description)}
                                   disabled={isUpdating}
                                   variant="destructive" 
                                   className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
@@ -528,7 +565,7 @@ export default function AdminPage() {
                                   <Ban className="h-3 w-3" /> Perm Ban
                                 </Button>
                                 <Button 
-                                  onClick={() => handleApplyBan(userItem.id, 'temp-1', "Direct admin temp ban.", userItem.description)}
+                                  onClick={() => openSanctionReasonDialog(userItem.id, 'temp-1', userItem.description)}
                                   disabled={isUpdating}
                                   variant="outline" 
                                   className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
@@ -536,7 +573,7 @@ export default function AdminPage() {
                                   <Clock className="h-3 w-3" /> Temp (1D)
                                 </Button>
                                 <Button 
-                                  onClick={() => handleApplyBan(userItem.id, 'temp-7', "Direct admin temp ban.", userItem.description)}
+                                  onClick={() => openSanctionReasonDialog(userItem.id, 'temp-7', userItem.description)}
                                   disabled={isUpdating}
                                   variant="outline" 
                                   className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
@@ -793,7 +830,7 @@ export default function AdminPage() {
                         <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Moderation Sanctions</h4>
                         <div className="grid grid-cols-2 gap-2">
                           <Button 
-                            onClick={() => handleApplyBan(activeReport.targetUserId, 'warning', activeReport.reason, targetProfile?.description)}
+                            onClick={() => openSanctionReasonDialog(activeReport.targetUserId, 'warning', targetProfile?.description)}
                             disabled={isUpdating}
                             variant="outline" 
                             className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
@@ -801,7 +838,7 @@ export default function AdminPage() {
                             <AlertTriangle className="h-3 w-3 text-yellow-500" /> Warn
                           </Button>
                           <Button 
-                            onClick={() => handleApplyBan(activeReport.targetUserId, 'perm', activeReport.reason, targetProfile?.description)}
+                            onClick={() => openSanctionReasonDialog(activeReport.targetUserId, 'perm', targetProfile?.description)}
                             disabled={isUpdating}
                             variant="destructive" 
                             className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
@@ -809,7 +846,7 @@ export default function AdminPage() {
                             <Ban className="h-3 w-3" /> Perm Ban
                           </Button>
                           <Button 
-                            onClick={() => handleApplyBan(activeReport.targetUserId, 'temp-1', activeReport.reason, targetProfile?.description)}
+                            onClick={() => openSanctionReasonDialog(activeReport.targetUserId, 'temp-1', targetProfile?.description)}
                             disabled={isUpdating}
                             variant="outline" 
                             className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
@@ -817,7 +854,7 @@ export default function AdminPage() {
                             <Clock className="h-3 w-3" /> Temp Ban (1D)
                           </Button>
                           <Button 
-                            onClick={() => handleApplyBan(activeReport.targetUserId, 'temp-7', activeReport.reason, targetProfile?.description)}
+                            onClick={() => openSanctionReasonDialog(activeReport.targetUserId, 'temp-7', targetProfile?.description)}
                             disabled={isUpdating}
                             variant="outline" 
                             className="font-headline text-[8px] font-bold uppercase tracking-widest gap-2"
@@ -851,6 +888,57 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Sanction Reason Dialog */}
+      <Dialog open={isSanctionReasonDialogOpen} onOpenChange={setIsSanctionReasonDialogOpen}>
+        <DialogContent className="bg-background border-border sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="font-headline font-bold text-2xl uppercase flex items-center gap-2">
+              <ShieldAlert className="h-6 w-6 text-destructive" />
+              Reason for Sanction
+            </DialogTitle>
+            <DialogDescription>
+              Select a reason or provide a custom one for this action.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Violation Type</label>
+              <Select value={selectedReason} onValueChange={setSelectedReason}>
+                <SelectTrigger className="h-12 bg-muted/20">
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PREDEFINED_REASONS.map(reason => (
+                    <SelectItem key={reason} value={reason}>{reason}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedReason === "Other" && (
+              <div className="space-y-2 animate-fade-in">
+                <label className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Custom Reason</label>
+                <Input
+                  placeholder="Describe the violation..."
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  className="h-12 bg-muted/20"
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={handleApplySanctionWithReason}
+              disabled={isUpdating || !selectedReason || (selectedReason === "Other" && !customReason)}
+              className="w-full h-12 font-headline font-bold uppercase text-xs"
+            >
+              {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply Sanction"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }
