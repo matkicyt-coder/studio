@@ -15,7 +15,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         request.auth.uid == userId || 
         isAdmin() || 
-        (exists(resource) && resource.data.sequentialId == 1)
+        resource.data.sequentialId == 1
       );
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
@@ -26,7 +26,7 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      // Combined read rule that handles both individual 'get' and filtered 'list' queries
+      // Allow list and get operations for participants and admins
       allow read: if isSignedIn() && (
         isAdmin() || 
         resource.data.receiverId == request.auth.uid || 
@@ -34,6 +34,7 @@ service cloud.firestore {
       );
       
       allow create: if isSignedIn();
+      
       allow update, delete: if isSignedIn() && (
         isAdmin() || 
         resource.data.receiverId == request.auth.uid

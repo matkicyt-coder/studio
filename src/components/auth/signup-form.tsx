@@ -101,7 +101,7 @@ export function SignupForm() {
 
       // Send welcome message if not user #1
       if (sequentialId > 1) {
-        // Find Admin (User #1)
+        // Find Admin (User #1) - This query is allowed by rules for sequentialId == 1
         const adminQuery = query(collection(db, "users"), where("sequentialId", "==", 1))
         const adminSnapshot = await getDocs(adminQuery)
         
@@ -251,7 +251,7 @@ System Administrator`,
 
           <Button 
             type="submit" 
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-headline font-bold"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-headline font-bold transition-all"
             disabled={isLoading}
           >
             {isLoading ? "Creating account..." : "Sign Up"}

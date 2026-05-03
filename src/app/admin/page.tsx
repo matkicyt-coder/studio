@@ -46,12 +46,15 @@ export default function AdminPage() {
     if (!db || !user?.uid) return null
     return doc(db, "users", user.uid)
   }, [db, user?.uid])
+  
   const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef)
 
   const usersQuery = useMemoFirebase(() => {
+    // Strictly wait for userData to confirm admin status before querying all users
     if (!db || !userData || userData.isAdmin !== true) return null
     return query(collection(db, "users"), orderBy("sequentialId", "asc"))
-  }, [db, userData?.isAdmin])
+  }, [db, userData])
+
   const { data: allUsers, isLoading: isUsersLoading } = useCollection(usersQuery)
 
   useEffect(() => {
@@ -179,7 +182,7 @@ export default function AdminPage() {
             placeholder="Search by username or ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-card border-border h-14 pl-12 text-lg"
+            className="bg-card border-border h-14 pl-12 text-lg shadow-sm"
           />
         </div>
 
@@ -187,7 +190,7 @@ export default function AdminPage() {
           {filteredUsers?.map((userItem) => (
             <div 
               key={userItem.id} 
-              className="flex items-center justify-between p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
+              className="flex items-center justify-between p-5 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all shadow-sm"
             >
               <div className="flex items-center gap-4">
                 <div className="flex flex-col">
@@ -212,12 +215,12 @@ export default function AdminPage() {
                     }}
                     variant="ghost" 
                     size="icon" 
-                    className="rounded-full"
+                    className="rounded-full hover:bg-accent transition-colors"
                   >
                     <Settings2 className="h-5 w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-background border-border">
+                <DialogContent className="bg-background border-border sm:max-w-[425px]">
                   <DialogHeader>
                     <DialogTitle className="font-headline font-bold text-2xl">{userItem.username}</DialogTitle>
                     <DialogDescription>Manage user privileges and account details.</DialogDescription>
@@ -225,30 +228,30 @@ export default function AdminPage() {
 
                   <div className="py-6 space-y-8">
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">Permissions</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-wider">Permissions</label>
                       <Button
                         onClick={() => handleUpdateAdminStatus(userItem)}
                         disabled={isUpdating}
                         variant={userItem.isAdmin ? "destructive" : "default"}
-                        className="w-full h-12 font-bold"
+                        className="w-full h-12 font-bold font-headline"
                       >
                         {userItem.isAdmin ? "Remove Admin Privileges" : "Grant Admin Privileges"}
                       </Button>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">System Position</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-wider">System Position</label>
                       <div className="flex gap-2">
                         <Input
                           type="number"
                           value={newSequentialId}
                           onChange={(e) => setNewSequentialId(e.target.value)}
-                          className="h-12"
+                          className="h-12 bg-muted/30"
                         />
                         <Button
                           onClick={() => handleUpdateSequentialId(userItem)}
                           disabled={isUpdating || !newSequentialId}
-                          className="h-12 px-6"
+                          className="h-12 px-6 font-headline font-bold"
                         >
                           Update
                         </Button>
@@ -256,26 +259,26 @@ export default function AdminPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase">Currency Control</label>
+                      <label className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-wider">Currency Control</label>
                       <div className="grid grid-cols-2 gap-3">
                         <Input
                           type="number"
                           placeholder="Amount"
                           value={coinAdjustment}
                           onChange={(e) => setCoinAdjustment(e.target.value)}
-                          className="col-span-2 h-12"
+                          className="col-span-2 h-12 bg-muted/30"
                         />
                         <Button
                           onClick={() => handleAdjustCoins(userItem, 'add')}
                           disabled={isUpdating || !coinAdjustment}
-                          className="h-12 bg-primary text-primary-foreground font-bold"
+                          className="h-12 bg-primary text-primary-foreground font-bold font-headline"
                         >
                           <Plus className="h-4 w-4 mr-2" /> Add
                         </Button>
                         <Button
                           onClick={() => handleAdjustCoins(userItem, 'remove')}
                           disabled={isUpdating || !coinAdjustment}
-                          className="h-12 bg-destructive text-destructive-foreground font-bold"
+                          className="h-12 bg-destructive text-destructive-foreground font-bold font-headline"
                         >
                           <Minus className="h-4 w-4 mr-2" /> Remove
                         </Button>
@@ -288,7 +291,7 @@ export default function AdminPage() {
           ))}
           
           {filteredUsers?.length === 0 && (
-            <div className="text-center py-20 text-muted-foreground font-headline">
+            <div className="text-center py-20 text-muted-foreground font-headline text-lg italic">
               No results found.
             </div>
           )}

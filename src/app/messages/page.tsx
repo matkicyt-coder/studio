@@ -21,11 +21,14 @@ export default function MessagesPage() {
     if (!db || !user?.uid) return null
     return doc(db, "users", user.uid)
   }, [db, user?.uid])
+  
   const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef)
 
   const messagesQuery = useMemoFirebase(() => {
-    // Only query if user is logged in and we have their record
+    // CRITICAL: Only initiate query if we have the user record and we know their permissions
     if (!db || !user?.uid || !userData) return null
+    
+    // For admins, we could technically show more, but we stick to their personal inbox for this view
     return query(
       collection(db, "messages"),
       where("receiverId", "==", user.uid),
@@ -59,6 +62,7 @@ export default function MessagesPage() {
     }
   }
 
+  // Improved loading state to prevent flickering and permission races
   if (isUserLoading || isUserDataLoading || (userData && isMessagesLoading)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -83,7 +87,7 @@ export default function MessagesPage() {
           </div>
 
           <div className="space-y-2 overflow-y-auto max-h-[70vh] pr-2">
-            {messages?.length === 0 && (
+            {!isMessagesLoading && messages?.length === 0 && (
               <div className="text-center py-10 text-muted-foreground font-headline">
                 No messages yet.
               </div>
@@ -122,7 +126,7 @@ export default function MessagesPage() {
 
         <div className="md:col-span-2">
           {selectedMessage ? (
-            <div className="bg-card border border-border rounded-2xl p-8 space-y-6 animate-fade-in h-full flex flex-col">
+            <div className="bg-card border border-border rounded-2xl p-8 space-y-6 animate-fade-in h-full flex flex-col shadow-sm">
               <div className="flex justify-between items-start border-b border-border pb-6">
                 <div>
                   <h2 className="text-2xl font-headline font-bold text-primary mb-2">
@@ -138,7 +142,7 @@ export default function MessagesPage() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="text-muted-foreground hover:text-destructive"
+                  className="text-muted-foreground hover:text-destructive transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteMessage(selectedMessage.id);
@@ -148,14 +152,14 @@ export default function MessagesPage() {
                 </Button>
               </div>
               
-              <div className="flex-1 text-lg leading-relaxed whitespace-pre-wrap font-body">
+              <div className="flex-1 text-lg leading-relaxed whitespace-pre-wrap font-body py-4">
                 {selectedMessage.content}
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-muted-foreground bg-card/50 border border-dashed border-border rounded-2xl p-12">
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground bg-card/30 border border-dashed border-border rounded-2xl p-12">
               <Mail className="h-12 w-12 mb-4 opacity-20" />
-              <p className="font-headline">Select a message to read</p>
+              <p className="font-headline text-lg">Select a message to read</p>
             </div>
           )}
         </div>

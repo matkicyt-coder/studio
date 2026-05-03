@@ -32,7 +32,7 @@ export function NavigationBar() {
 
   const { data: userData } = useDoc(userDocRef)
 
-  // Unread messages count - only query if user and their record are ready
+  // Unread messages count - strictly wait for userData to avoid permission race conditions
   const messagesQuery = useMemoFirebase(() => {
     if (!db || !user?.uid || !userData) return null
     return query(
@@ -41,6 +41,7 @@ export function NavigationBar() {
       where("isRead", "==", false)
     )
   }, [db, user?.uid, userData])
+  
   const { data: unreadMessages } = useCollection(messagesQuery)
 
   const handleBuy = (amount: number) => {
@@ -69,7 +70,7 @@ export function NavigationBar() {
   const coinBalance = userData?.coins ?? 0
 
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border/50 bg-secondary/80 backdrop-blur-md z-50 px-6 flex items-center">
+    <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border/50 bg-background/80 backdrop-blur-md z-50 px-6 flex items-center shadow-sm">
       <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
         <Link 
           href="/home" 
@@ -85,7 +86,7 @@ export function NavigationBar() {
           >
             <Mail className="h-6 w-6" />
             {unreadMessages && unreadMessages.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+              <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground animate-pulse">
                 {unreadMessages.length}
               </span>
             )}
@@ -93,12 +94,12 @@ export function NavigationBar() {
 
           <Dialog>
             <DialogTrigger asChild>
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background border border-border hover:bg-accent transition-colors font-bold shadow-sm">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border hover:bg-accent transition-all font-bold shadow-sm">
                 <Coins className="h-4 w-4 text-primary" />
-                <span>{formatCurrency(coinBalance)}</span>
+                <span className="font-headline">{formatCurrency(coinBalance)}</span>
               </button>
             </DialogTrigger>
-            <DialogContent className="bg-background border-border">
+            <DialogContent className="bg-background border-border sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-headline font-bold">Buy coins</DialogTitle>
                 <DialogDescription>
@@ -112,14 +113,14 @@ export function NavigationBar() {
                   { amount: 1000, label: "1000" },
                   { amount: 5000, label: "5000" },
                 ].map((tier) => (
-                  <div key={tier.amount} className="flex items-center justify-between p-4 rounded-lg bg-accent/50 border border-border">
+                  <div key={tier.amount} className="flex items-center justify-between p-4 rounded-xl bg-accent/20 border border-border">
                     <div className="flex items-center gap-3">
                       <Coins className="h-5 w-5 text-primary" />
-                      <span className="font-bold text-lg">{tier.label} Coins</span>
+                      <span className="font-bold text-lg font-headline">{tier.label} Coins</span>
                     </div>
                     <Button 
                       onClick={() => handleBuy(tier.amount)}
-                      className="font-bold"
+                      className="font-bold font-headline"
                     >
                       $0.00
                     </Button>
