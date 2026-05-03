@@ -9,13 +9,15 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn();
+      // Allow read (get/list) for everyone to support username/phone availability checks
+      allow read: if true;
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /friendships/{friendshipId} {
       allow read: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && (request.resource.data.user1 == request.auth.uid || request.resource.data.user2 == request.auth.uid);
       allow update: if isSignedIn() && (request.auth.uid == resource.data.user1 || request.auth.uid == resource.data.user2);
       allow delete: if isSignedIn() && (request.auth.uid == resource.data.user1 || request.auth.uid == resource.data.user2);
@@ -23,6 +25,7 @@ service cloud.firestore {
 
     match /follows/{followId} {
       allow read: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.followerId == request.auth.uid;
       allow delete: if isSignedIn() && resource.data.followerId == request.auth.uid;
     }
