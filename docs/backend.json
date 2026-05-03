@@ -1,35 +1,40 @@
+
 {
   "entities": {
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user registered in the Blauberia application, storing their unique identity and essential profile information.",
+      "description": "Represents a user registered in the application.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the User entity."
+          "description": "Unique identifier (Firebase Auth UID)."
         },
         "username": {
           "type": "string",
-          "description": "A unique username chosen by the user during registration. Must not contain emojis."
+          "description": "Chosen username."
         },
         "dateOfBirth": {
           "type": "string",
-          "description": "The user's date of birth.",
+          "description": "User's date of birth.",
           "format": "date"
         },
         "gender": {
           "type": "string",
-          "description": "The user's declared gender."
+          "description": "User's gender."
         },
-        "agreedToTerms": {
+        "sequentialId": {
+          "type": "number",
+          "description": "Numeric ID starting from 1."
+        },
+        "isAdmin": {
           "type": "boolean",
-          "description": "Indicates whether the user has agreed to the terms of service."
+          "description": "True if the user is the first user (User 1)."
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp indicating when the user account was created.",
+          "description": "Timestamp of account creation.",
           "format": "date-time"
         }
       },
@@ -38,36 +43,32 @@
         "username",
         "dateOfBirth",
         "gender",
-        "agreedToTerms",
+        "sequentialId",
+        "isAdmin",
         "createdAt"
       ]
+    },
+    "Counter": {
+      "title": "Counter",
+      "type": "object",
+      "properties": {
+        "count": { "type": "number" }
+      }
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores individual user profiles, where the document ID (`{userId}`) matches the Firebase Authentication UID. Access is strictly restricted to the owner, ensuring private data. Authorization independence is achieved as the owner's UID is part of the path.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user, matching their Firebase Authentication UID."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The recommended Firestore structure for Blauberia prioritizes secure, scalable, and debuggable user data management. We will use a single top-level collection, `/users`, where each document's ID directly corresponds to the Firebase Authentication UID of the user. This path-based ownership model is fundamental to achieving robust security and authorization independence.\n\n**Authorization Independence:** By making the document ID `{userId}` match the `request.auth.uid`, each user's profile is inherently authorized for access only by that specific user. This eliminates the need for any `get()` operations in security rules to check parent documents or external data for authorization, thereby supporting atomic operations and significantly simplifying rule debugging. The authorization logic becomes `allow read, write: if request.auth.uid == userId;`, which is clear, concise, and highly performant.\n\n**QAPs (Query as a Principal):** For this `User` profile collection, the primary way a user accesses their own data is by directly referencing their document (`/users/{request.auth.uid}`). Direct `list` operations on the `/users` collection for unauthorized users will be explicitly denied in security rules, upholding the QAP principle. If there were a future need for a public user directory, a separate collection (e.g., `/public_profiles`) with only public user attributes would be created, ensuring distinct security postures and preventing unintended data exposure. This structural segregation ensures that `list` queries are inherently secure by matching the security requirements of the collection."
+    "/users/{userId}": {
+      "schema": { "$ref": "#/backend/entities/User" },
+      "description": "User profile data."
+    },
+    "/counters/{counterId}": {
+      "schema": { "$ref": "#/backend/entities/Counter" },
+      "description": "Internal counters for sequential IDs."
+    }
   }
 }

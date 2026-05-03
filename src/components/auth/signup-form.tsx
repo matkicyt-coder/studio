@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -6,7 +7,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { 
-  User, 
+  User as UserIcon, 
   Lock, 
   Calendar
 } from "lucide-react"
@@ -30,7 +31,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth, useFirestore } from "@/firebase"
 import { createUserWithEmailAndPassword } from "firebase/auth"
-import { doc, setDoc } from "firebase/firestore"
+import { doc, setDoc, runTransaction } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from '@/firebase/error-emitter'
 import { FirestorePermissionError } from '@/firebase/errors'
@@ -70,39 +71,46 @@ export function SignupForm() {
   async function onSubmit(data: SignupFormValues) {
     setIsLoading(true)
     try {
-      const email = `${data.username.toLowerCase()}@blauberia.io`
+      // 1. Create the Auth account
+      const email = `${data.username.toLowerCase()}@terminal.io`
       const userCredential = await createUserWithEmailAndPassword(auth, email, data.password)
       const user = userCredential.user
+
+      // 2. Determine sequential ID via transaction
+      const counterRef = doc(db, "counters", "users")
+      const sequentialId = await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterRef)
+        let nextId = 1
+        if (counterDoc.exists()) {
+          nextId = counterDoc.data().count + 1
+        }
+        transaction.set(counterRef, { count: nextId })
+        return nextId
+      })
 
       const userData = {
         id: user.uid,
         username: data.username,
         dateOfBirth: data.dob,
         gender: data.gender,
+        sequentialId: sequentialId,
+        isAdmin: sequentialId === 1,
         agreedToTerms: data.terms,
         createdAt: new Date().toISOString(),
       }
 
+      // 3. Create the profile document
       const userDocRef = doc(db, "users", user.uid)
-      
-      setDoc(userDocRef, userData)
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
-            operation: 'create',
-            requestResourceData: userData,
-          })
-          errorEmitter.emit('permission-error', permissionError)
-        })
+      await setDoc(userDocRef, userData)
 
-      router.push("/")
+      // 4. Redirect to home
+      router.push("/home")
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Registration failed",
         description: error.message || "An unexpected error occurred.",
       })
-    } finally {
       setIsLoading(false)
     }
   }
@@ -111,7 +119,6 @@ export function SignupForm() {
     <div className="grid gap-6 animate-fade-in">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-          {/* 1. Date of Birth */}
           <FormField
             control={form.control}
             name="dob"
@@ -122,7 +129,7 @@ export function SignupForm() {
                     <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <Input 
                       type="date" 
-                      className="pl-10 transition-fluid block w-full bg-background" 
+                      className="pl-10 block w-full bg-background" 
                       {...field} 
                     />
                   </div>
@@ -132,7 +139,6 @@ export function SignupForm() {
             )}
           />
 
-          {/* 2. Username */}
           <FormField
             control={form.control}
             name="username"
@@ -140,10 +146,10 @@ export function SignupForm() {
               <FormItem>
                 <FormControl>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <UserIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input 
                       placeholder="Username" 
-                      className="pl-10 transition-fluid bg-background" 
+                      className="pl-10 bg-background" 
                       {...field} 
                     />
                   </div>
@@ -153,7 +159,6 @@ export function SignupForm() {
             )}
           />
 
-          {/* 3. Password */}
           <FormField
             control={form.control}
             name="password"
@@ -165,7 +170,7 @@ export function SignupForm() {
                     <Input 
                       type="password" 
                       placeholder="Password" 
-                      className="pl-10 transition-fluid bg-background" 
+                      className="pl-10 bg-background" 
                       {...field} 
                     />
                   </div>
@@ -175,7 +180,6 @@ export function SignupForm() {
             )}
           />
 
-          {/* 4. Gender (Label text removed per request) */}
           <FormField
             control={form.control}
             name="gender"
@@ -183,7 +187,7 @@ export function SignupForm() {
               <FormItem>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger className="transition-fluid bg-background">
+                    <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Gender" />
                     </SelectTrigger>
                   </FormControl>
@@ -221,7 +225,7 @@ export function SignupForm() {
 
           <Button 
             type="submit" 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-headline font-bold transition-fluid"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-headline font-bold"
             disabled={isLoading}
           >
             {isLoading ? "Creating account..." : "Sign Up"}
