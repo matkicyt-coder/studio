@@ -146,8 +146,8 @@ export default function ProfilePage() {
         <NavigationBar />
         <div className="max-w-xl mx-auto text-center space-y-6">
           <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto" />
-          <h1 className="text-3xl font-headline font-bold">User Not Found</h1>
-          <Button onClick={() => router.push("/home")} variant="outline" className="gap-2">
+          <h1 className="text-3xl font-headline font-bold uppercase">User Not Found</h1>
+          <Button onClick={() => router.push("/home")} variant="outline" className="gap-2 uppercase font-bold text-xs">
             <ArrowLeft className="h-4 w-4" /> Back Home
           </Button>
         </div>
@@ -186,7 +186,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <h1 className="text-4xl font-headline font-bold tracking-tighter">
+                <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase">
                   {profileUser.username}
                 </h1>
                 {profileUser.isAdmin && (
@@ -197,7 +197,8 @@ export default function ProfilePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-            <div className="space-y-6">
+            <div className="space-y-8">
+              {/* Description Section */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Description</h3>
@@ -226,7 +227,7 @@ export default function ProfilePage() {
                         size="sm" 
                         onClick={handleUpdateDescription}
                         disabled={isSavingDescription}
-                        className="font-headline font-bold text-xs"
+                        className="font-headline font-bold text-xs uppercase"
                       >
                         {isSavingDescription ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
                         Save
@@ -238,7 +239,7 @@ export default function ProfilePage() {
                           setIsEditingDescription(false)
                           setNewDescription(profileUser.description || "")
                         }}
-                        className="font-headline font-bold text-xs"
+                        className="font-headline font-bold text-xs uppercase"
                       >
                         <X className="h-3 w-3 mr-1" />
                         Cancel
@@ -252,6 +253,7 @@ export default function ProfilePage() {
                 )}
               </div>
 
+              {/* History Section */}
               {profileUser.pastUsernames && profileUser.pastUsernames.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Past Names</h3>
@@ -267,24 +269,17 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex flex-col items-end gap-6 md:pt-4">
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">Joined Since</span>
-                <div className="flex items-center gap-1.5 text-foreground/60">
-                  <Clock className="h-3 w-3" />
-                  <span className="text-sm font-medium">{joinDate}</span>
-                </div>
-              </div>
-
+              {/* Metadata and Actions Section */}
               {!isOwnProfile && (
                 <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive gap-2 font-headline text-[10px] font-bold uppercase tracking-widest h-auto p-0">
-                      <Flag className="h-3 w-3" /> Report Profile
+                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive gap-2 font-headline text-[10px] font-bold uppercase tracking-widest h-auto p-0 group">
+                      <Flag className="h-3 w-3 group-hover:fill-destructive" /> Report Profile
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="bg-background border-border">
                     <DialogHeader>
-                      <DialogTitle className="font-headline font-bold text-2xl">Report Profile</DialogTitle>
+                      <DialogTitle className="font-headline font-bold text-2xl uppercase">Report Profile</DialogTitle>
                       <DialogDescription>
                         Explain why this profile violates terminal standards.
                       </DialogDescription>
@@ -340,6 +335,14 @@ export default function ProfilePage() {
                   </DialogContent>
                 </Dialog>
               )}
+
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-[0.2em]">Joined Since</span>
+                <div className="flex items-center gap-1.5 text-foreground/60">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-sm font-medium">{joinDate}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
