@@ -33,8 +33,6 @@ import { useAuth, useFirestore } from "@/firebase"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { doc, setDoc, runTransaction } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
-import { errorEmitter } from '@/firebase/error-emitter'
-import { FirestorePermissionError } from '@/firebase/errors'
 
 const signupSchema = z.object({
   dob: z.string().min(1, "Date of birth is required"),
@@ -71,12 +69,10 @@ export function SignupForm() {
   async function onSubmit(data: SignupFormValues) {
     setIsLoading(true)
     try {
-      // 1. Create the Auth account
       const email = `${data.username.toLowerCase()}@terminal.io`
       const userCredential = await createUserWithEmailAndPassword(auth, email, data.password)
       const user = userCredential.user
 
-      // 2. Determine sequential ID via transaction
       const counterRef = doc(db, "counters", "users")
       const sequentialId = await runTransaction(db, async (transaction) => {
         const counterDoc = await transaction.get(counterRef)
@@ -94,16 +90,15 @@ export function SignupForm() {
         dateOfBirth: data.dob,
         gender: data.gender,
         sequentialId: sequentialId,
+        coins: 0,
         isAdmin: sequentialId === 1,
         agreedToTerms: data.terms,
         createdAt: new Date().toISOString(),
       }
 
-      // 3. Create the profile document
       const userDocRef = doc(db, "users", user.uid)
       await setDoc(userDocRef, userData)
 
-      // 4. Redirect to home
       router.push("/home")
     } catch (error: any) {
       toast({

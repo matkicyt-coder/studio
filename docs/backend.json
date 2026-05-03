@@ -28,6 +28,10 @@
           "type": "number",
           "description": "Numeric ID starting from 1."
         },
+        "coins": {
+          "type": "number",
+          "description": "User's currency balance."
+        },
         "isAdmin": {
           "type": "boolean",
           "description": "True if the user is the first user (User 1)."
@@ -44,6 +48,7 @@
         "dateOfBirth",
         "gender",
         "sequentialId",
+        "coins",
         "isAdmin",
         "createdAt"
       ]
