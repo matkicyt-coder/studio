@@ -193,7 +193,7 @@ export function NavigationBar() {
             </DialogTrigger>
             <DialogContent className="bg-background border-border sm:max-w-[425px] w-[95vw] rounded-3xl">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Purchase Coins</DialogTitle>
+                <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-tight">Buy Coins</DialogTitle>
                 <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
                   {isParentalMode 
                     ? "Purchases are restricted while Parental Mode is active." 
@@ -222,22 +222,22 @@ export function NavigationBar() {
                   </div>
                 ))}
 
-                <div className="pt-2">
-                  <Button 
-                    onClick={() => {
-                      router.push("/premium")
-                      // Trigger closure of dialog via click on backdrop or specific ref if available,
-                      // but usually redirect handles it. Simple manual trigger for UX:
-                      const closeBtn = document.querySelector('[data-radix-collection-item]') as HTMLElement
-                      closeBtn?.click()
-                    }}
-                    variant="default"
-                    className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-headline font-bold uppercase tracking-tighter gap-2 rounded-xl shadow-lg"
-                  >
-                    <Crown className="h-5 w-5" />
-                    Become Premium
-                  </Button>
-                </div>
+                {!userData?.isPremium && (
+                  <div className="pt-2">
+                    <Button 
+                      onClick={() => {
+                        router.push("/premium")
+                        const closeBtn = document.querySelector('[data-radix-collection-item]') as HTMLElement
+                        closeBtn?.click()
+                      }}
+                      variant="default"
+                      className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-headline font-bold uppercase tracking-tighter gap-2 rounded-xl shadow-lg"
+                    >
+                      <Crown className="h-5 w-5" />
+                      Become Premium
+                    </Button>
+                  </div>
+                )}
               </div>
             </DialogContent>
           </Dialog>
@@ -256,13 +256,17 @@ export function NavigationBar() {
                 <Settings className="h-4 w-4" />
                 <span className="font-headline font-bold text-[10px] uppercase tracking-widest">Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => router.push("/premium")}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-accent transition-colors text-amber-600"
-              >
-                <Crown className="h-4 w-4" />
-                <span className="font-headline font-bold text-[10px] uppercase tracking-widest">Premium</span>
-              </DropdownMenuItem>
+              
+              {userData?.isPremium && (
+                <DropdownMenuItem 
+                  onClick={() => router.push("/premium")}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-accent transition-colors text-amber-600"
+                >
+                  <Crown className="h-4 w-4" />
+                  <span className="font-headline font-bold text-[10px] uppercase tracking-widest">Premium</span>
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuItem 
                 onClick={handleLogout}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-destructive hover:bg-destructive/10 transition-colors"
