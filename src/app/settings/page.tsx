@@ -16,7 +16,7 @@ import {
 } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, Loader2, Lock, User, ShieldAlert, Sun, Moon, Calendar, ShieldCheck, Smartphone, CheckCircle2, Mail } from "lucide-react"
+import { Pencil, Loader2, Lock, User, ShieldAlert, Sun, Moon, Calendar, ShieldCheck, Smartphone, CheckCircle2, Mail, RefreshCw, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import {
   Dialog,
@@ -42,6 +42,7 @@ import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import { calculateAge } from "@/lib/utils"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 
 export default function SettingsPage() {
   const { user, isUserLoading } = useUser()
@@ -99,6 +100,14 @@ export default function SettingsPage() {
       router.push("/login")
     }
   }, [user, isUserLoading, router])
+
+  const censorEmail = (email: string | null | undefined) => {
+    if (!email) return "Not linked"
+    const [name, domain] = email.split("@")
+    if (!domain) return email
+    const censoredName = name.length > 2 ? name.substring(0, 2) + "***" : name + "***"
+    return `${censoredName}@${domain}`
+  }
 
   const handleUpdateUsername = async () => {
     if (!userDocRef || !userData || !newUsername) return
@@ -249,6 +258,26 @@ export default function SettingsPage() {
     }
   }
 
+  const handleResendEmailVerification = async () => {
+    if (!user) return
+    setIsUpdating(true)
+    try {
+      await sendEmailVerification(user)
+      toast({
+        title: "Verification Resent",
+        description: "Check your inbox for the new confirmation link.",
+      })
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   const handleDobUpdateAttempt = () => {
     if (isParentalMode) {
       toast({
@@ -294,6 +323,8 @@ export default function SettingsPage() {
       </div>
     )
   }
+
+  const isEmailVerified = user.emailVerified
 
   return (
     <main className="min-h-screen bg-background w-full pt-16 flex flex-col">
@@ -398,7 +429,19 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between group">
               <div className="space-y-1">
                 <p className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Email address</p>
-                <h2 className="text-xl font-medium truncate max-w-[200px]">{userData?.email || "Not linked"}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-medium truncate max-w-[200px]">
+                    {isEmailVerified ? censorEmail(user.email) : (user.email || "Not linked")}
+                  </h2>
+                  {isEmailVerified && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                </div>
+                {!isEmailVerified && user.email && (
+                  <div className="flex gap-2 mt-1">
+                    <Button variant="link" onClick={handleResendEmailVerification} className="h-auto p-0 text-[10px] uppercase font-bold text-primary gap-1">
+                      <RefreshCw className={cn("h-3 w-3", isUpdating && "animate-spin")} /> Resend link
+                    </Button>
+                  </div>
+                )}
               </div>
               <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
                 <DialogTrigger asChild>
@@ -409,8 +452,8 @@ export default function SettingsPage() {
                 <DialogContent className="bg-background border-border sm:rounded-3xl">
                   <DialogHeader>
                     <DialogTitle className="font-headline font-bold text-xl uppercase">Link email</DialogTitle>
-                    <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
-                      We'll send an email to confirm your address. Please check your inbox!
+                    <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground leading-relaxed">
+                      We'll send a confirmation link to your inbox. Click the link to verify your account.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4">
@@ -461,10 +504,10 @@ export default function SettingsPage() {
                     <DialogTitle className="font-headline font-bold text-xl uppercase">
                       {phoneStep === 'input' ? "Link phone number" : "Verify code"}
                     </DialogTitle>
-                    <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <DialogDescription className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground leading-relaxed">
                       {phoneStep === 'input' 
-                        ? "Enter your phone number to receive a verification code via SMS." 
-                        : `Enter the code sent to ${newPhone}.`}
+                        ? "Enter your mobile number to receive a secure verification code via SMS." 
+                        : `Type the 6-digit code sent to ${newPhone}.`}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4">
@@ -480,7 +523,7 @@ export default function SettingsPage() {
                       </div>
                     ) : (
                       <div className="relative">
-                        <CheckCircle2 className="absolute left-3 top-3 h-4 w-4 text-primary" />
+                        <Check className="absolute left-3 top-3 h-4 w-4 text-primary" />
                         <Input
                           placeholder="6-digit code"
                           value={phoneVerificationCode}
