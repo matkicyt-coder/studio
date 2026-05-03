@@ -64,6 +64,11 @@
         "targetUserId": { "type": "string" },
         "targetUsername": { "type": "string" },
         "reason": { "type": "string" },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "solved", "unsolved", "troll"],
+          "description": "Current status of the report."
+        },
         "claimedById": { "type": "string" },
         "claimedByUsername": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }

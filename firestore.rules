@@ -20,7 +20,7 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       allow create: if isSignedIn();
-      allow read, list, delete: if isAdmin();
+      allow read, list, update, delete: if isAdmin();
     }
 
     match /counters/{counterId} {

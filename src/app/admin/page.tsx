@@ -23,7 +23,10 @@ import {
   Clock,
   ExternalLink,
   ShieldAlert,
-  Gavel
+  Gavel,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle
 } from "lucide-react"
 import {
   Dialog,
@@ -38,6 +41,7 @@ import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
 
 export default function AdminPage() {
   const { user, isUserLoading } = useUser()
@@ -195,7 +199,8 @@ export default function AdminPage() {
     const reportRef = doc(db, "reports", report.id)
     const updateData = {
       claimedById: user.uid,
-      claimedByUsername: userData.username
+      claimedByUsername: userData.username,
+      status: "pending"
     }
     updateDoc(reportRef, updateData).catch(error => {
       errorEmitter.emit("permission-error", new FirestorePermissionError({
@@ -211,7 +216,8 @@ export default function AdminPage() {
     const reportRef = doc(db, "reports", reportId)
     const updateData = {
       claimedById: null,
-      claimedByUsername: null
+      claimedByUsername: null,
+      status: "pending"
     }
     updateDoc(reportRef, updateData).then(() => {
       setInspectingReportId(null)
@@ -224,7 +230,24 @@ export default function AdminPage() {
     })
   }
 
+  const handleUpdateReportStatus = async (reportId: string, status: string) => {
+    if (!db) return
+    const reportRef = doc(db, "reports", reportId)
+    const updateData = { status }
+    updateDoc(reportRef, updateData).then(() => {
+      toast({ title: "Status Updated", description: `Report marked as ${status}.` })
+    }).catch(error => {
+      errorEmitter.emit("permission-error", new FirestorePermissionError({
+        path: reportRef.path,
+        operation: "update",
+        requestResourceData: updateData
+      }))
+    })
+  }
+
   const activeReport = allReports?.find(r => r.id === inspectingReportId)
+  const reporterProfile = activeReport ? allUsers?.find(u => u.id === activeReport.reporterId) : null
+  const targetProfile = activeReport ? allUsers?.find(u => u.id === activeReport.targetUserId) : null
 
   return (
     <main className="min-h-screen bg-background w-full pt-24 px-6 pb-20">
@@ -237,7 +260,7 @@ export default function AdminPage() {
               <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
-          <h1 className="text-4xl font-headline font-bold">Admin Management</h1>
+          <h1 className="text-4xl font-headline font-bold tracking-tighter">Admin Panel</h1>
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
@@ -383,6 +406,11 @@ export default function AdminPage() {
                   <div className="flex items-center gap-3">
                     <Flag className="h-5 w-5 text-destructive" />
                     <span className="font-headline font-bold text-lg">Report against {report.targetUsername}</span>
+                    {report.status && report.status !== 'pending' && (
+                      <Badge variant="outline" className="uppercase text-[10px] tracking-widest font-bold">
+                        {report.status}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {report.claimedById ? (
@@ -412,7 +440,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 
-                <p className="bg-muted/30 p-4 rounded-xl text-sm italic border border-border/50">
+                <p className="bg-muted/30 p-4 rounded-xl text-sm italic border border-border/50 line-clamp-2">
                   "{report.reason}"
                 </p>
 
@@ -433,11 +461,6 @@ export default function AdminPage() {
                       {new Date(report.createdAt).toLocaleString()}
                     </div>
                   </div>
-                  <Link href={`/profile/${allUsers?.find(u => u.id === report.targetUserId)?.sequentialId}`}>
-                    <Button variant="outline" size="sm" className="font-headline font-bold h-8 text-[10px] uppercase">
-                      View Profile
-                    </Button>
-                  </Link>
                 </div>
               </div>
             ))}
@@ -453,7 +476,7 @@ export default function AdminPage() {
                         Inspect Report
                       </DialogTitle>
                       <DialogDescription>
-                        Full moderation terminal for report against {activeReport.targetUsername}.
+                        Case management for report against {activeReport.targetUsername}.
                       </DialogDescription>
                     </DialogHeader>
 
@@ -467,12 +490,57 @@ export default function AdminPage() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Target Username</h4>
-                          <p className="font-medium">{activeReport.targetUsername}</p>
+                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Target</h4>
+                          <div className="flex flex-col gap-1">
+                            <p className="font-medium">{activeReport.targetUsername}</p>
+                            {targetProfile && (
+                              <Link href={`/profile/${targetProfile.sequentialId}`}>
+                                <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary">View Profile</Button>
+                              </Link>
+                            )}
+                          </div>
                         </div>
                         <div className="space-y-1">
-                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Target User ID</h4>
-                          <p className="font-mono text-xs opacity-60 truncate">{activeReport.targetUserId}</p>
+                          <h4 className="text-[10px] font-headline font-bold text-muted-foreground uppercase tracking-widest">Reporter</h4>
+                          <div className="flex flex-col gap-1">
+                            <p className="font-medium">{activeReport.reporterUsername}</p>
+                            {reporterProfile && (
+                              <Link href={`/profile/${reporterProfile.sequentialId}`}>
+                                <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary">View Profile</Button>
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status Controls - Only if claimed by current user or someone else */}
+                      <div className="space-y-4 pt-4 border-t border-border/50">
+                        <h4 className="text-xs font-headline font-bold text-muted-foreground uppercase tracking-widest">Set Status</h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          <Button 
+                            variant={activeReport.status === 'solved' ? "default" : "outline"}
+                            size="sm"
+                            className="font-headline text-[10px] font-bold uppercase gap-1"
+                            onClick={() => handleUpdateReportStatus(activeReport.id, 'solved')}
+                          >
+                            <CheckCircle2 className="h-3 w-3" /> Solved
+                          </Button>
+                          <Button 
+                            variant={activeReport.status === 'unsolved' ? "default" : "outline"}
+                            size="sm"
+                            className="font-headline text-[10px] font-bold uppercase gap-1"
+                            onClick={() => handleUpdateReportStatus(activeReport.id, 'unsolved')}
+                          >
+                            <XCircle className="h-3 w-3" /> Unsolved
+                          </Button>
+                          <Button 
+                            variant={activeReport.status === 'troll' ? "default" : "outline"}
+                            size="sm"
+                            className="font-headline text-[10px] font-bold uppercase gap-1"
+                            onClick={() => handleUpdateReportStatus(activeReport.id, 'troll')}
+                          >
+                            <AlertTriangle className="h-3 w-3" /> Troll
+                          </Button>
                         </div>
                       </div>
 
